@@ -15,8 +15,6 @@ public class EventListFrame extends JFrame {
     private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
     private static final Color GREEN_PROGRESS = new Color(180, 230, 180);
     private static final Color ORANGE_CLOSED = new Color(255, 200, 180);
-    
-    // [추가] 팝업용 색상
     private static final Color POPUP_BG = new Color(255, 250, 205);
 
     private static Font uiFont;
@@ -30,6 +28,10 @@ public class EventListFrame extends JFrame {
             uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
         }
     }
+
+    // [수정] 사용자 변수
+    private String userName = "사용자";
+    private int userPoint = 100;
 
     private JLabel userInfoText;
     private JComboBox<String> councilDropdown;
@@ -86,18 +88,23 @@ public class EventListFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
+        // [수정] 프로필 아이콘 제거
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        JLabel profileIcon = new JLabel("👤");
-        profileIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
-
-        userInfoText = new JLabel("[이름]님 | 보유 꿀 : 100 | 로그아웃");
+        userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
+        userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // [수정] 로그아웃 연결
+        userInfoText.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                showLogoutPopup();
+            }
+        });
 
-        userInfoPanel.add(profileIcon);
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
@@ -269,6 +276,7 @@ public class EventListFrame extends JFrame {
         eventListPanel.add(card);
     }
 
+    // [수정] 네비게이션 연결
     private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -291,8 +299,7 @@ public class EventListFrame extends JFrame {
                     } else if (text.equals("마이페이지")) {
                         new MainFrame(); dispose();
                     } else {
-                        // [수정] 팝업 스타일 변경
-                        showSimplePopup("알림", "[" + text + "] 화면으로 이동합니다.");
+                        showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                     }
                 }
             });
@@ -300,7 +307,6 @@ public class EventListFrame extends JFrame {
         return btn;
     }
 
-    // [추가] 팝업 메서드
     private void showSimplePopup(String title, String message) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setUndecorated(true);
@@ -339,6 +345,62 @@ public class EventListFrame extends JFrame {
         okBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         okBtn.addActionListener(e -> dialog.dispose());
         panel.add(okBtn);
+
+        dialog.setVisible(true);
+    }
+
+    // [수정] 로그아웃 팝업
+    private void showLogoutPopup() {
+        JDialog dialog = new JDialog(this, "로그아웃", true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel msgLabel = new JLabel("로그아웃 하시겠습니까?", SwingConstants.CENTER);
+        msgLabel.setFont(uiFont.deriveFont(18f));
+        msgLabel.setForeground(BROWN);
+        msgLabel.setBounds(20, 70, 360, 30);
+        panel.add(msgLabel);
+
+        JButton yesBtn = new JButton("네");
+        yesBtn.setFont(uiFont.deriveFont(16f));
+        yesBtn.setBackground(BROWN);
+        yesBtn.setForeground(Color.WHITE);
+        yesBtn.setFocusPainted(false);
+        yesBtn.setBorder(new RoundedBorder(15, BROWN, 1));
+        yesBtn.setBounds(60, 150, 120, 45);
+        yesBtn.addActionListener(e -> {
+            dialog.dispose();
+            new LoginFrame();
+            dispose();
+        });
+        panel.add(yesBtn);
+
+        JButton noBtn = new JButton("아니오");
+        noBtn.setFont(uiFont.deriveFont(16f));
+        noBtn.setBackground(BROWN);
+        noBtn.setForeground(Color.WHITE);
+        noBtn.setFocusPainted(false);
+        noBtn.setBorder(new RoundedBorder(15, BROWN, 1));
+        noBtn.setBounds(220, 150, 120, 45);
+        noBtn.addActionListener(e -> dialog.dispose());
+        panel.add(noBtn);
 
         dialog.setVisible(true);
     }

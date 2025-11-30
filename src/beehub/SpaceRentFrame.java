@@ -17,9 +17,6 @@ import java.util.Arrays;
 
 public class SpaceRentFrame extends JFrame {
 
-    // ===============================
-    // 🎨 테마 컬러
-    // ===============================
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BROWN = new Color(89, 60, 28);
@@ -35,14 +32,12 @@ public class SpaceRentFrame extends JFrame {
     private static final Color BTN_DISABLED_BG = new Color(230, 230, 230);
     private static final Color BTN_DISABLED_FG = new Color(180, 180, 180);
 
-    // 폰트
     private static Font uiFont;
     static {
         try {
             InputStream is = SpaceRentFrame.class.getResourceAsStream("/fonts/DNFBitBitv2.ttf");
             if (is == null) uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
             else uiFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(14f);
-            
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(uiFont);
         } catch (Exception e) {
@@ -50,9 +45,10 @@ public class SpaceRentFrame extends JFrame {
         }
     }
 
-    // ===============================
-    // 🏠 데이터 설정
-    // ===============================
+    // [수정] 사용자 변수
+    private String userName = "사용자";
+    private int userPoint = 100;
+
     private String[] spaces = {
         "-- 공간을 선택해주세요 --", 
         "=== 세미나실 (2~6인) ===", 
@@ -67,13 +63,9 @@ public class SpaceRentFrame extends JFrame {
         "17:00", "18:00", "19:00", "20:00"
     };
 
-    // [중요] 예약된 시간 데이터 (공간+날짜 기준)
     private Map<String, List<String>> bookedDatabase = new HashMap<>();
-    
-    // [수정] 날짜별 내 예약 시간 합계 (날짜 기준)
     private Map<String, Integer> myBookedHoursByDate = new HashMap<>();
 
-    // UI 컴포넌트
     private JComboBox<String> spaceCombo;
     private JComboBox<Integer> yearCombo, monthCombo, dayCombo;
     private JPanel partnerContainer; 
@@ -89,9 +81,7 @@ public class SpaceRentFrame extends JFrame {
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        // 테스트 데이터 (오늘 날짜 세미나실A 10시, 14시 예약됨)
         initDummyData();
-
         initHeaderAndNav();
         initContent();
 
@@ -121,21 +111,23 @@ public class SpaceRentFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
+        // [수정] 프로필 아이콘 제거
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(450, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        JLabel userInfoText = new JLabel("[이름]님 | 보유 꿀 : 100 | 로그아웃");
+        JLabel userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // [수정] 로그아웃 팝업 연결
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                new LoginFrame(); dispose();
+                showLogoutPopup();
             }
         });
 
-        userInfoPanel.add(new JLabel("👤"));
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
@@ -158,23 +150,19 @@ public class SpaceRentFrame extends JFrame {
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        // ==========================================
-        // [LEFT] 예약 설정 (위아래 여백 줄임)
-        // ==========================================
+        // [LEFT]
         JPanel leftPanel = new JPanel(null);
-        leftPanel.setBounds(30, 30, 380, 430); // Y위치 조정, 높이 조정
+        leftPanel.setBounds(30, 30, 380, 430); 
         leftPanel.setBackground(Color.WHITE);
         leftPanel.setBorder(new RoundedBorder(15, BORDER_COLOR, 2));
         contentPanel.add(leftPanel);
 
-        // 타이틀 위치 상단으로 붙임
         JLabel leftTitle = new JLabel("1. 예약 일시 선택");
         leftTitle.setFont(uiFont.deriveFont(Font.BOLD, 18f));
         leftTitle.setForeground(BROWN);
         leftTitle.setBounds(25, 25, 200, 25);
         leftPanel.add(leftTitle);
 
-        // 간격 좁힘 (기존 60 -> 65)
         addLabel(leftPanel, "공간 선택", 65);
         spaceCombo = new JComboBox<>(spaces);
         spaceCombo.setRenderer(new SpaceListRenderer());
@@ -205,7 +193,7 @@ public class SpaceRentFrame extends JFrame {
 
         addLabel(leftPanel, "시간 선택", 225);
         
-        JPanel timeGridPanel = new JPanel(new GridLayout(3, 4, 6, 6)); // 간격 살짝 줄임
+        JPanel timeGridPanel = new JPanel(new GridLayout(3, 4, 6, 6)); 
         timeGridPanel.setBounds(25, 255, 330, 120);
         timeGridPanel.setOpaque(false);
 
@@ -216,11 +204,9 @@ public class SpaceRentFrame extends JFrame {
         }
         leftPanel.add(timeGridPanel);
 
-        // ==========================================
-        // [RIGHT] 사용자 정보 (위아래 여백 줄임)
-        // ==========================================
+        // [RIGHT]
         JPanel rightPanel = new JPanel(null);
-        rightPanel.setBounds(430, 30, 390, 430); // Y위치 조정, 높이 조정
+        rightPanel.setBounds(430, 30, 390, 430); 
         rightPanel.setBackground(Color.WHITE);
         rightPanel.setBorder(new RoundedBorder(15, BORDER_COLOR, 2));
         contentPanel.add(rightPanel);
@@ -231,7 +217,6 @@ public class SpaceRentFrame extends JFrame {
         rightTitle.setBounds(25, 25, 200, 25);
         rightPanel.add(rightTitle);
 
-        // 안내 문구 (위치 조정)
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 5));
         infoPanel.setBackground(Color.WHITE);
         infoPanel.setBounds(25, 60, 340, 30);
@@ -239,11 +224,9 @@ public class SpaceRentFrame extends JFrame {
         JLabel info1 = new JLabel("※ ");
         info1.setFont(uiFont.deriveFont(13f));
         info1.setForeground(Color.GRAY);
-        
         JLabel info2 = new JLabel("하루 최대 3시간");
         info2.setFont(uiFont.deriveFont(13f));
-        info2.setForeground(new Color(220, 50, 50)); // Red
-        
+        info2.setForeground(new Color(220, 50, 50)); 
         JLabel info3 = new JLabel("까지 이용 가능합니다.");
         info3.setFont(uiFont.deriveFont(13f));
         info3.setForeground(Color.GRAY);
@@ -285,7 +268,7 @@ public class SpaceRentFrame extends JFrame {
         partnerContainer.setBackground(Color.WHITE);
         
         JScrollPane scrollPane = new JScrollPane(partnerContainer);
-        scrollPane.setBounds(25, 215, 340, 130); // 높이 살짝 조정
+        scrollPane.setBounds(25, 215, 340, 130); 
         scrollPane.setBorder(null);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         rightPanel.add(scrollPane);
@@ -296,7 +279,7 @@ public class SpaceRentFrame extends JFrame {
         rentBtn.setFont(uiFont.deriveFont(20f));
         rentBtn.setBackground(BROWN);
         rentBtn.setForeground(Color.WHITE);
-        rentBtn.setBounds(25, 365, 340, 45); // 버튼 위치 올림
+        rentBtn.setBounds(25, 365, 340, 45); 
         rentBtn.setFocusPainted(false);
         rentBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         rentBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -306,9 +289,6 @@ public class SpaceRentFrame extends JFrame {
         updateTimeSlotAvailability();
     }
 
-    // ===============================
-    // 📅 날짜 로직
-    // ===============================
     private void initDateLogic() {
         LocalDate today = LocalDate.now();
         LocalDate maxDate = today.plusMonths(3); 
@@ -327,7 +307,6 @@ public class SpaceRentFrame extends JFrame {
         updateDays(today, maxDate);
     }
 
-    // ✨ 핵심 기능: 예약된 시간 회색 처리 (날짜별 로직 반영)
     private void updateTimeSlotAvailability() {
         String selectedSpace = (String) spaceCombo.getSelectedItem();
         Object y = yearCombo.getSelectedItem();
@@ -474,7 +453,6 @@ public class SpaceRentFrame extends JFrame {
             return;
         }
 
-        // [수정] 날짜별 예약 시간 합계 체크
         String dateKey = yearCombo.getSelectedItem() + "-" + monthCombo.getSelectedItem() + "-" + dayCombo.getSelectedItem();
         int usedHours = myBookedHoursByDate.getOrDefault(dateKey, 0);
 
@@ -546,9 +524,6 @@ public class SpaceRentFrame extends JFrame {
         return ampm + " " + h + "시";
     }
 
-    // ===============================
-    // 🎨 [수정] 단순 팝업 (JLabel 조립)
-    // ===============================
     private void showSimplePopup(String title, String message) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setSize(400, 250); 
@@ -581,9 +556,6 @@ public class SpaceRentFrame extends JFrame {
         dialog.setVisible(true);
     }
 
-    // ===============================
-    // 🎨 [수정] 예약 완료 팝업 (JLabel 조립 + 예약 확정 로직)
-    // ===============================
     private void showSuccessPopup(String space, String date, String timeRange, int totalPeople, List<Integer> hours, String dateKey) {
         JDialog dialog = new JDialog(this, "예약 완료", true);
         dialog.setSize(420, 350); 
@@ -628,13 +600,11 @@ public class SpaceRentFrame extends JFrame {
         JButton okBtn = createPopupBtn("확인");
         okBtn.setBounds(135, 240, 150, 50);
         okBtn.addActionListener(e -> {
-            // [중요] 예약 확정 시 데이터 저장
             Object y = yearCombo.getSelectedItem();
             Object m = monthCombo.getSelectedItem();
             Object d = dayCombo.getSelectedItem();
             String key = space + "_" + y + "년 " + m + "월 " + d + "일";
             
-            // 1. 해당 공간/날짜 예약 DB 업데이트 (회색 처리용)
             List<String> bookedList = bookedDatabase.getOrDefault(key, new ArrayList<>());
             for(int h : hours) {
                 String t = String.format("%02d:00", h);
@@ -642,14 +612,48 @@ public class SpaceRentFrame extends JFrame {
             }
             bookedDatabase.put(key, bookedList);
             
-            // 2. 내 예약 시간 합계 업데이트 (3시간 제한용)
             int current = myBookedHoursByDate.getOrDefault(dateKey, 0);
             myBookedHoursByDate.put(dateKey, current + selectedTimeCount);
 
             dialog.dispose();
-            updateTimeSlotAvailability(); // 화면 갱신
+            updateTimeSlotAvailability(); 
         });
         panel.add(okBtn);
+
+        dialog.setVisible(true);
+    }
+
+    // [수정] 로그아웃 팝업
+    private void showLogoutPopup() {
+        JDialog dialog = new JDialog(this, "로그아웃", true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = createPopupPanel();
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel msgLabel = new JLabel("로그아웃 하시겠습니까?", SwingConstants.CENTER);
+        msgLabel.setFont(uiFont.deriveFont(18f));
+        msgLabel.setForeground(BROWN);
+        msgLabel.setBounds(20, 70, 360, 30);
+        panel.add(msgLabel);
+
+        JButton yesBtn = createPopupBtn("네");
+        yesBtn.setBounds(60, 150, 120, 45);
+        yesBtn.addActionListener(e -> {
+            dialog.dispose();
+            new LoginFrame();
+            dispose();
+        });
+        panel.add(yesBtn);
+
+        JButton noBtn = createPopupBtn("아니오");
+        noBtn.setBounds(220, 150, 120, 45);
+        noBtn.addActionListener(e -> dialog.dispose());
+        panel.add(noBtn);
 
         dialog.setVisible(true);
     }
@@ -721,6 +725,7 @@ public class SpaceRentFrame extends JFrame {
         ((JComponent) box.getRenderer()).setOpaque(true);
     }
 
+    // [수정] 네비게이션 연결
     private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -736,9 +741,9 @@ public class SpaceRentFrame extends JFrame {
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("공간대여")) return;
                     if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
-                    else if (text.equals("과행사")) { new EventListFrame(); dispose(); }
+                    else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
                     else if (text.equals("마이페이지")) { new MainFrame(); dispose(); }
-                    else showSimplePopup("알림", "준비 중입니다.");
+                    else showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                 }
             });
         }

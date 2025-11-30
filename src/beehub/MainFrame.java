@@ -19,8 +19,6 @@ public class MainFrame extends JFrame {
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BROWN = new Color(89, 60, 28);
     private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
-    
-    // 팝업용 색상
     private static final Color POPUP_BG = new Color(255, 250, 205);
 
     // ===============================
@@ -41,6 +39,10 @@ public class MainFrame extends JFrame {
             uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
         }
     }
+
+    // 사용자 정보 (추후 DB 연동 시 이 변수 변경)
+    private String userName = "사용자";
+    private int userPoint = 100;
 
     private JLabel userInfoText;
     private JLabel notiText1;
@@ -81,25 +83,23 @@ public class MainFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
+        // [수정] 프로필 아이콘 제거, 텍스트만 표시
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        JLabel profileIcon = new JLabel("👤");
-        profileIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
-        
-        userInfoText = new JLabel("로딩중..."); 
+        userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃"); 
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
+        // 로그아웃 팝업 연결
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 showLogoutPopup();
             }
         });
 
-        userInfoPanel.add(profileIcon);
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
@@ -124,11 +124,9 @@ public class MainFrame extends JFrame {
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        // [벌 아이콘]
         JLabel beeIcon = new JLabel();
         String imgPath = "resource/img/login-bee.png"; 
         ImageIcon originalIcon = new ImageIcon(imgPath);
-        
         if (originalIcon.getIconWidth() > 0) {
             Image img = originalIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
             beeIcon.setIcon(new ImageIcon(img));
@@ -145,7 +143,7 @@ public class MainFrame extends JFrame {
         notiTitle.setBounds(110, 40, 200, 30);
         contentPanel.add(notiTitle);
 
-        // [TODAY 알림 박스 (고정)]
+        // [TODAY 알림 박스]
         JPanel todayPanel = new JPanel();
         todayPanel.setLayout(null);
         todayPanel.setBounds(50, 90, 700, 150);
@@ -153,7 +151,6 @@ public class MainFrame extends JFrame {
         todayPanel.setBorder(new RoundedBorder(20, BROWN, 2));
         contentPanel.add(todayPanel);
 
-        // 헤더 패널 (X 버튼 없음)
         JPanel todayHeader = new JPanel();
         todayHeader.setBounds(2, 2, 696, 40);
         todayHeader.setBackground(HIGHLIGHT_YELLOW);
@@ -179,7 +176,7 @@ public class MainFrame extends JFrame {
         notiText2.setBounds(0, 100, 700, 30);
         todayPanel.add(notiText2);
 
-        // [일정 리스트 패널 (스크롤 가능)]
+        // [일정 리스트 패널]
         schedulePanel = new JPanel();
         schedulePanel.setLayout(null);
         schedulePanel.setBackground(BG_MAIN);
@@ -192,37 +189,26 @@ public class MainFrame extends JFrame {
         contentPanel.add(scrollPane);
     }
 
-    // ==========================================
-    // 📅 데이터 갱신 로직
-    // ==========================================
     private void refreshData() {
-        String userName = "이름"; 
-        int honeyPoint = 100;
-        userInfoText.setText("[" + userName + "]님 | 보유 꿀 : " + honeyPoint + " | 로그아웃");
+        userInfoText.setText("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
 
-        // [데이터] 오늘은 "12월 5일"로 가정
         String todayDate = "12월 5일";
         
         List<ScheduleItem> allSchedules = new ArrayList<>();
-        // 오늘 일정
         allSchedules.add(new ScheduleItem("12월 5일", "노트북", "RETURN", 0)); 
         allSchedules.add(new ScheduleItem("12월 5일", "총학생회 간식행사", "SNACK", 15));
         
-        // 미래 일정
         allSchedules.add(new ScheduleItem("12월 6일", "보조배터리", "RETURN", 0));
         allSchedules.add(new ScheduleItem("12월 6일", "소융의 밤 행사", "EVENT", 50));
         allSchedules.add(new ScheduleItem("12월 20일", "종강 파티", "EVENT", 0));
         allSchedules.add(new ScheduleItem("12월 25일", "크리스마스 행사", "EVENT", 0));
         
-        // [1] 오늘 일정 처리 -> 상단 알리미 박스
         List<ScheduleItem> todayItems = allSchedules.stream()
                 .filter(item -> item.date.equals(todayDate))
                 .collect(Collectors.toList());
 
         if (!todayItems.isEmpty()) {
             ScheduleItem highlightItem = null;
-            
-            // 우선순위: 간식 > 반납 > 기타
             for(ScheduleItem item : todayItems) {
                 if(item.type.equals("SNACK")) { highlightItem = item; break; }
             }
@@ -250,7 +236,6 @@ public class MainFrame extends JFrame {
             notiText2.setText("");
         }
 
-        // [2] 미래 일정 처리 -> 하단 리스트
         List<ScheduleItem> futureItems = allSchedules.stream()
                 .filter(item -> !item.date.equals(todayDate))
                 .collect(Collectors.toList());
@@ -260,15 +245,13 @@ public class MainFrame extends JFrame {
         
         for (ScheduleItem item : futureItems) {
             String displayContent = "";
-            
             if (item.type.equals("RETURN")) {
                 displayContent = "'" + item.title + "' 반납";
             } else {
                 displayContent = item.title; 
             }
-            
             addScheduleItem(schedulePanel, item.date, displayContent, yPos);
-            yPos += 45; // 간격 조정
+            yPos += 45; 
         }
         
         schedulePanel.setPreferredSize(new Dimension(680, yPos));
@@ -279,8 +262,8 @@ public class MainFrame extends JFrame {
     class ScheduleItem {
         String date;
         String title;
-        String type; // SNACK, RETURN, EVENT
-        int count;   // 간식 잔여 수량
+        String type; 
+        int count;  
 
         public ScheduleItem(String date, String title, String type, int count) {
             this.date = date;
@@ -290,6 +273,7 @@ public class MainFrame extends JFrame {
         }
     }
 
+    // [수정] 네비게이션 연결 로직
     private JButton createNavButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -302,7 +286,7 @@ public class MainFrame extends JFrame {
             public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
             public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
             public void mouseClicked(MouseEvent e) {
-                if (text.equals("마이페이지")) return;
+                if (text.equals("마이페이지")) return; // 현재 페이지
                 
                 if (text.equals("공간대여")) {
                     new SpaceRentFrame(); dispose();
@@ -311,7 +295,7 @@ public class MainFrame extends JFrame {
                 } else if (text.equals("물품대여")) {
                     new ItemListFrame(); dispose();
                 } else {
-                    showSimplePopup("알림", "[" + text + "] 화면으로 이동합니다.");
+                    showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                 }
             }
         });
@@ -319,34 +303,28 @@ public class MainFrame extends JFrame {
     }
 
     private void addScheduleItem(JPanel panel, String date, String content, int y) {
-        // [수정] 날짜: 왼쪽 정렬
         JLabel dateLabel = new JLabel(date);
         dateLabel.setFont(uiFont.deriveFont(16f));
         dateLabel.setForeground(BROWN);
         dateLabel.setBounds(10, y, 100, 30);
-        dateLabel.setHorizontalAlignment(SwingConstants.LEFT); // LEFT 정렬
+        dateLabel.setHorizontalAlignment(SwingConstants.LEFT); 
         
-        // [수정] 구분선: 위치 조정 (날짜 옆에 붙도록)
         JLabel barLabel = new JLabel("|");
         barLabel.setFont(uiFont.deriveFont(16f));
         barLabel.setForeground(Color.LIGHT_GRAY);
-        barLabel.setBounds(110, y, 20, 30); // 120 -> 110으로 당김
+        barLabel.setBounds(110, y, 20, 30);
         barLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // [수정] 내용: 왼쪽 정렬
         JLabel contentLabel = new JLabel(content);
         contentLabel.setFont(uiFont.deriveFont(18f));
         contentLabel.setForeground(BROWN); 
-        contentLabel.setBounds(135, y, 530, 30); // 150 -> 135로 당김
+        contentLabel.setBounds(135, y, 530, 30); 
 
         panel.add(dateLabel);
         panel.add(barLabel);
         panel.add(contentLabel);
     }
 
-    // ===============================
-    // 🎨 팝업 스타일
-    // ===============================
     private void showSimplePopup(String title, String message) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setUndecorated(true);
@@ -372,6 +350,7 @@ public class MainFrame extends JFrame {
         dialog.setVisible(true);
     }
 
+    // [수정] 로그아웃 팝업 (네/아니오)
     private void showLogoutPopup() {
         JDialog dialog = new JDialog(this, "로그아웃", true);
         dialog.setUndecorated(true);
@@ -393,7 +372,7 @@ public class MainFrame extends JFrame {
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
-            new LoginFrame();
+            new LoginFrame(); // 로그인 화면으로 이동
             dispose();
         });
         panel.add(yesBtn);
