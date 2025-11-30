@@ -15,6 +15,9 @@ public class ItemListFrame extends JFrame {
     private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
     private static final Color GREEN_AVAILABLE = new Color(180, 230, 180);
     private static final Color RED_UNAVAILABLE = new Color(255, 200, 200);
+    
+    // [추가] 팝업용 색상
+    private static final Color POPUP_BG = new Color(255, 250, 205);
 
     private static Font uiFont;
 
@@ -32,12 +35,7 @@ public class ItemListFrame extends JFrame {
     private JTextField searchField;
     private JPanel itemListPanel;
 
-    // ===============================
-    // 📦 임시 물품 데이터
-    // TODO: DB 연동 시 ItemDTO로 변경
-    // ===============================
     private String[][] items = {
-        // {itemName, stock, status, rentDays, restrictedMajor, imagePath}
         {"C타입 충전기", "3", "available", "1", "전체 학과", null},
         {"노트북", "0", "unavailable", "3", "전체 학과", null},
         {"전공책", "2", "available", "5", "소프트웨어융합학과", null}
@@ -147,7 +145,6 @@ public class ItemListFrame extends JFrame {
 
     private void loadItems() {
         itemListPanel.removeAll();
-
         int yPos = 10;
         for (String[] item : items) {
             String itemName = item[0];
@@ -155,12 +152,11 @@ public class ItemListFrame extends JFrame {
             String status = item[2];
             String rentDays = item[3];
             String restrictedMajor = item[4];
-            String imagePath = item[5]; // 나중에 DB에서 가져올 이미지 경로
+            String imagePath = item[5]; 
 
             addItemCard(itemName, stock, status, rentDays, restrictedMajor, imagePath, yPos);
             yPos += 130;
         }
-
         itemListPanel.setPreferredSize(new Dimension(750, yPos));
         itemListPanel.revalidate();
         itemListPanel.repaint();
@@ -177,9 +173,6 @@ public class ItemListFrame extends JFrame {
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
 
-        // ===============================
-        // 📷 아이콘 영역 (이미지 or 이모지)
-        // ===============================
         JLabel iconLabel = new JLabel();
         iconLabel.setBounds(20, 20, 70, 70);
         iconLabel.setOpaque(true);
@@ -188,25 +181,21 @@ public class ItemListFrame extends JFrame {
         iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-        // TODO: DB 연동 시 imagePath가 null이 아니면 이미지 로드
         if (imagePath != null) {
             try {
                 ImageIcon icon = new ImageIcon(imagePath);
                 Image img = icon.getImage().getScaledInstance(65, 65, Image.SCALE_SMOOTH);
                 iconLabel.setIcon(new ImageIcon(img));
-                iconLabel.setText(""); // 이미지 있으면 텍스트 제거
+                iconLabel.setText("");
             } catch (Exception e) {
-                // 이미지 로드 실패 시 이모지로 대체
                 iconLabel.setIcon(null);
                 iconLabel.setText(getEmojiForItem(itemName));
                 iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
             }
         } else {
-            // 이미지 없으면 이모지 표시
             iconLabel.setText(getEmojiForItem(itemName));
             iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         }
-        
         card.add(iconLabel);
 
         JLabel statusLabel = new JLabel(status.equals("available") ? "대여 가능" : "대여 불가");
@@ -227,32 +216,23 @@ public class ItemListFrame extends JFrame {
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
         card.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                // 상세 화면으로 이동 (이미지 경로 전달)
                 new ItemDetailFrame(itemName, stock, status, rentDays, restrictedMajor, imagePath);
                 dispose();
             }
-
-            public void mouseEntered(MouseEvent e) {
-                card.setBackground(new Color(250, 250, 250));
-            }
-            public void mouseExited(MouseEvent e) {
-                card.setBackground(Color.WHITE);
-            }
+            public void mouseEntered(MouseEvent e) { card.setBackground(new Color(250, 250, 250)); }
+            public void mouseExited(MouseEvent e) { card.setBackground(Color.WHITE); }
         });
 
         itemListPanel.add(card);
     }
 
-    // ===============================
-    // 🎨 물품별 이모지 반환
-    // ===============================
     private String getEmojiForItem(String itemName) {
         if (itemName.contains("충전기")) return "⚡";
         if (itemName.contains("노트북")) return "💻";
         if (itemName.contains("책")) return "📚";
         if (itemName.contains("우산")) return "☂️";
         if (itemName.contains("배터리")) return "🔋";
-        return "📦"; // 기본 아이콘
+        return "📦"; 
     }
 
     private void searchItems() {
@@ -261,10 +241,8 @@ public class ItemListFrame extends JFrame {
             loadItems();
             return;
         }
-
         itemListPanel.removeAll();
         int yPos = 10;
-
         for (String[] item : items) {
             if (item[0].contains(keyword)) {
                 String itemName = item[0];
@@ -273,12 +251,10 @@ public class ItemListFrame extends JFrame {
                 String rentDays = item[3];
                 String restrictedMajor = item[4];
                 String imagePath = item[5];
-
                 addItemCard(itemName, stock, status, rentDays, restrictedMajor, imagePath, yPos);
                 yPos += 130;
             }
         }
-
         if (yPos == 10) {
             JLabel noResult = new JLabel("검색 결과가 없습니다.", SwingConstants.CENTER);
             noResult.setFont(uiFont.deriveFont(20f));
@@ -286,7 +262,6 @@ public class ItemListFrame extends JFrame {
             noResult.setBounds(0, 100, 750, 50);
             itemListPanel.add(noResult);
         }
-
         itemListPanel.setPreferredSize(new Dimension(750, Math.max(yPos, 350)));
         itemListPanel.revalidate();
         itemListPanel.repaint();
@@ -307,52 +282,89 @@ public class ItemListFrame extends JFrame {
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("물품대여")) return;
-                    JOptionPane.showMessageDialog(null, "[" + text + "] 화면으로 이동합니다.");
+                    
+                    if (text.equals("과행사")) {
+                        new EventListFrame(); dispose();
+                    } else if (text.equals("공간대여")) {
+                        new SpaceRentFrame(); dispose();
+                    } else if (text.equals("마이페이지")) {
+                        new MainFrame(); dispose();
+                    } else {
+                        // [수정] 팝업 스타일 변경
+                        showSimplePopup("알림", "[" + text + "] 화면으로 이동합니다.");
+                    }
                 }
             });
         }
         return btn;
     }
-    
-    // ===============================
-    // ✨ 모던 스크롤바 UI
-    // ===============================
-    class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
 
+    // [추가] 팝업 메서드
+    private void showSimplePopup(String title, String message) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
+        msgLabel.setFont(uiFont.deriveFont(16f));
+        msgLabel.setForeground(BROWN);
+        msgLabel.setBounds(20, 80, 360, 30);
+        panel.add(msgLabel);
+
+        JButton okBtn = new JButton("확인");
+        okBtn.setFont(uiFont.deriveFont(16f));
+        okBtn.setBackground(BROWN);
+        okBtn.setForeground(Color.WHITE);
+        okBtn.setFocusPainted(false);
+        okBtn.setBorder(new RoundedBorder(15, BROWN, 1));
+        okBtn.setBounds(135, 160, 130, 45);
+        okBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        okBtn.addActionListener(e -> dialog.dispose());
+        panel.add(okBtn);
+
+        dialog.setVisible(true);
+    }
+    
+    class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
         @Override
         protected void configureScrollBarColors() {
             this.thumbColor = new Color(200, 200, 200);
             this.trackColor = new Color(245, 245, 245);
         }
-
         @Override
-        protected JButton createDecreaseButton(int orientation) {
-            return createZeroButton();
-        }
-
+        protected JButton createDecreaseButton(int orientation) { return createZeroButton(); }
         @Override
-        protected JButton createIncreaseButton(int orientation) {
-            return createZeroButton();
-        }
-
+        protected JButton createIncreaseButton(int orientation) { return createZeroButton(); }
         private JButton createZeroButton() {
             JButton btn = new JButton();
             btn.setPreferredSize(new Dimension(0, 0));
-            btn.setMinimumSize(new Dimension(0, 0));
-            btn.setMaximumSize(new Dimension(0, 0));
             return btn;
         }
-
         @Override
         protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
             if (!c.isEnabled()) return;
-
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(thumbColor);
             g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 10, 10);
         }
-
         @Override
         protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
             g.setColor(trackColor);

@@ -15,6 +15,9 @@ public class EventListFrame extends JFrame {
     private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
     private static final Color GREEN_PROGRESS = new Color(180, 230, 180);
     private static final Color ORANGE_CLOSED = new Color(255, 200, 180);
+    
+    // [추가] 팝업용 색상
+    private static final Color POPUP_BG = new Color(255, 250, 205);
 
     private static Font uiFont;
 
@@ -31,60 +34,20 @@ public class EventListFrame extends JFrame {
     private JLabel userInfoText;
     private JComboBox<String> councilDropdown;
     private JPanel eventListPanel;
-    private String selectedCouncil = "전체"; // 기본 선택
+    private String selectedCouncil = "전체"; 
 
-    // ===============================
-    // 📋 학생회 목록 (모두 독립적인 학생회)
-    // TODO: DB 연동 시 Council 테이블에서 가져오기
-    // ===============================
     private final String[] councils = {
-        "전체",
-        "총학생회",
+        "전체", "총학생회", "───────────────",
+        "인문대학", "글로벌ICT인문융합학부", "국어국문학과", "영어영문학과", "중어중문학과", "일어일문학과", "사학과", "기독교학과",
         "───────────────",
-        "인문대학",
-        "글로벌ICT인문융합학부",
-        "국어국문학과",
-        "영어영문학과",
-        "중어중문학과",
-        "일어일문학과",
-        "사학과",
-        "기독교학과",
+        "사회과학대학", "경제학과", "문헌정보학과", "사회복지학과", "아동학과", "행정학과", "언론영상학부", "심리.인지과학학부", "스포츠운동과학과",
         "───────────────",
-        "사회과학대학",
-        "경제학과",
-        "문헌정보학과",
-        "사회복지학과",
-        "아동학과",
-        "행정학과",
-        "언론영상학부",
-        "심리.인지과학학부",
-        "스포츠운동과학과",
+        "과학기술융합대학", "수학과", "화학과", "생명환경공학과", "바이오헬스융합학과", "원예생명조경학과", "식품공학과", "식품영양학과",
         "───────────────",
-        "과학기술융합대학",
-        "수학과",
-        "화학과",
-        "생명환경공학과",
-        "바이오헬스융합학과",
-        "원예생명조경학과",
-        "식품공학과",
-        "식품영양학과",
-        "───────────────",
-        "미래산업융합대학",
-        "경영학과",
-        "패션산업학과",
-        "디지털미디어학과",
-        "지능정보보호학부",
-        "소프트웨어융합학과",
-        "데이터사이언스학과",
-        "산업디자인학과"
+        "미래산업융합대학", "경영학과", "패션산업학과", "디지털미디어학과", "지능정보보호학부", "소프트웨어융합학과", "데이터사이언스학과", "산업디자인학과"
     };
 
-    // ===============================
-    // 📅 임시 행사 데이터
-    // TODO: DB 연동 시 EventDTO로 변경
-    // ===============================
     private String[][] events = {
-        // {eventId, councilName, eventName, eventType, status, remainingSlots, totalSlots}
         {"1", "소프트웨어융합학과", "기말 간식 행사", "간식", "진행중", "15", "20"},
         {"2", "소프트웨어융합학과", "소융의 밤 행사", "참여", "사전신청", "34", "50"},
         {"3", "총학생회", "종강파티", "참여", "진행예정", "100", "150"},
@@ -106,7 +69,6 @@ public class EventListFrame extends JFrame {
     }
 
     private void initUI() {
-        // --- 상단 헤더 ---
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBounds(0, 0, 800, 80);
@@ -139,7 +101,6 @@ public class EventListFrame extends JFrame {
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
-        // --- 네비게이션 ---
         JPanel navPanel = new JPanel();
         navPanel.setLayout(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
@@ -153,14 +114,12 @@ public class EventListFrame extends JFrame {
             navPanel.add(menuBtn);
         }
 
-        // --- 메인 컨텐츠 ---
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(null);
         contentPanel.setBounds(0, 130, 800, 470);
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        // 학생회 드롭다운
         JLabel councilLabel = new JLabel("학생회");
         councilLabel.setFont(uiFont.deriveFont(Font.BOLD, 20f));
         councilLabel.setForeground(BROWN);
@@ -200,7 +159,6 @@ public class EventListFrame extends JFrame {
         });
         contentPanel.add(councilDropdown);
 
-        // 검색 아이콘
         JLabel searchIcon = new JLabel("🔍");
         searchIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
         searchIcon.setBounds(330, 65, 30, 30);
@@ -212,7 +170,6 @@ public class EventListFrame extends JFrame {
         });
         contentPanel.add(searchIcon);
 
-        // 행사 목록 스크롤 패널
         eventListPanel = new JPanel();
         eventListPanel.setLayout(null);
         eventListPanel.setBackground(BG_MAIN);
@@ -237,12 +194,11 @@ public class EventListFrame extends JFrame {
             String eventId = event[0];
             String councilName = event[1];
             String eventName = event[2];
-            String eventType = event[3]; // "간식" or "참여"
+            String eventType = event[3];
             String status = event[4];
             int remainingSlots = Integer.parseInt(event[5]);
             int totalSlots = Integer.parseInt(event[6]);
 
-            // 선택된 학생회의 행사만 표시 ("전체"면 모두 표시)
             if (selectedCouncil.equals("전체") || councilName.equals(selectedCouncil)) {
                 addEventCard(eventId, councilName, eventName, eventType, status, 
                            remainingSlots, totalSlots, yPos);
@@ -272,7 +228,6 @@ public class EventListFrame extends JFrame {
         card.setBackground(Color.WHITE);
         card.setBorder(new RoundedBorder(15, new Color(200, 200, 200), 2));
 
-        // 행사 상태 라벨
         JLabel typeLabel = new JLabel(status);
         typeLabel.setFont(uiFont.deriveFont(Font.BOLD, 13f));
         typeLabel.setForeground(BROWN);
@@ -282,25 +237,21 @@ public class EventListFrame extends JFrame {
         typeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         card.add(typeLabel);
 
-        // 행사명
         JLabel nameLabel = new JLabel(eventName);
         nameLabel.setFont(uiFont.deriveFont(Font.BOLD, 24f));
         nameLabel.setForeground(Color.BLACK);
         nameLabel.setBounds(20, 55, 400, 35);
         card.add(nameLabel);
 
-        // 남은 인원
         JLabel slotsLabel = new JLabel("남은 인원 : " + remainingSlots + "명");
         slotsLabel.setFont(uiFont.deriveFont(18f));
         slotsLabel.setForeground(new Color(100, 100, 100));
         slotsLabel.setBounds(550, 55, 150, 30);
         card.add(slotsLabel);
 
-        // 카드 클릭 시 상세화면으로 이동
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
         card.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                // TODO: DB에서 행사 상세 정보 가져오기
                 new EventDetailFrame(eventId, councilName, eventName, eventType, 
                                     status, remainingSlots, totalSlots);
                 dispose();
@@ -334,15 +285,62 @@ public class EventListFrame extends JFrame {
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("과행사")) return;
                     if (text.equals("물품대여")) {
-                        new ItemListFrame();
-                        dispose();
+                        new ItemListFrame(); dispose();
+                    } else if (text.equals("공간대여")) {
+                        new SpaceRentFrame(); dispose();
+                    } else if (text.equals("마이페이지")) {
+                        new MainFrame(); dispose();
                     } else {
-                        JOptionPane.showMessageDialog(null, "[" + text + "] 화면으로 이동합니다.");
+                        // [수정] 팝업 스타일 변경
+                        showSimplePopup("알림", "[" + text + "] 화면으로 이동합니다.");
                     }
                 }
             });
         }
         return btn;
+    }
+
+    // [추가] 팝업 메서드
+    private void showSimplePopup(String title, String message) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
+        msgLabel.setFont(uiFont.deriveFont(16f));
+        msgLabel.setForeground(BROWN);
+        msgLabel.setBounds(20, 80, 360, 30);
+        panel.add(msgLabel);
+
+        JButton okBtn = new JButton("확인");
+        okBtn.setFont(uiFont.deriveFont(16f));
+        okBtn.setBackground(BROWN);
+        okBtn.setForeground(Color.WHITE);
+        okBtn.setFocusPainted(false);
+        okBtn.setBorder(new RoundedBorder(15, BROWN, 1));
+        okBtn.setBounds(135, 160, 130, 45);
+        okBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        okBtn.addActionListener(e -> dialog.dispose());
+        panel.add(okBtn);
+
+        dialog.setVisible(true);
     }
 
     class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
@@ -351,23 +349,15 @@ public class EventListFrame extends JFrame {
             this.thumbColor = new Color(200, 200, 200);
             this.trackColor = new Color(245, 245, 245);
         }
-
         @Override
-        protected JButton createDecreaseButton(int orientation) {
-            return createZeroButton();
-        }
-
+        protected JButton createDecreaseButton(int orientation) { return createZeroButton(); }
         @Override
-        protected JButton createIncreaseButton(int orientation) {
-            return createZeroButton();
-        }
-
+        protected JButton createIncreaseButton(int orientation) { return createZeroButton(); }
         private JButton createZeroButton() {
             JButton btn = new JButton();
             btn.setPreferredSize(new Dimension(0, 0));
             return btn;
         }
-
         @Override
         protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
             if (!c.isEnabled()) return;
@@ -376,7 +366,6 @@ public class EventListFrame extends JFrame {
             g2.setColor(thumbColor);
             g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 10, 10);
         }
-
         @Override
         protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
             g.setColor(trackColor);

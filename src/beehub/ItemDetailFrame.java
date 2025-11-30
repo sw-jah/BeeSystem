@@ -16,6 +16,9 @@ public class ItemDetailFrame extends JFrame {
     private static final Color GREEN_AVAILABLE = new Color(180, 230, 180);
     private static final Color RED_UNAVAILABLE = new Color(255, 200, 200);
     private static final Color GRAY_BTN = new Color(180, 180, 180);
+    
+    // 팝업 배경색
+    private static final Color POPUP_BG = new Color(255, 250, 205);
 
     private static Font uiFont;
 
@@ -33,16 +36,12 @@ public class ItemDetailFrame extends JFrame {
         }
     }
 
-    // ===============================
-    // 📦 물품 정보
-    // TODO: DB 연동 시 ItemDTO 객체로 변경
-    // ===============================
     private String itemName;
     private int stock;
     private String status;
     private String rentDays;
     private String restrictedMajor;
-    private String imagePath; // 관리자가 등록한 이미지 경로
+    private String imagePath; 
     private boolean isRented = false;
 
     public ItemDetailFrame(String itemName, int stock, String status, String rentDays, 
@@ -67,7 +66,6 @@ public class ItemDetailFrame extends JFrame {
     }
 
     private void initUI() {
-        // --- 상단 헤더 ---
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBounds(0, 0, 800, 80);
@@ -101,7 +99,6 @@ public class ItemDetailFrame extends JFrame {
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
-        // --- 네비게이션 ---
         JPanel navPanel = new JPanel();
         navPanel.setLayout(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
@@ -115,14 +112,12 @@ public class ItemDetailFrame extends JFrame {
             navPanel.add(menuBtn);
         }
 
-        // --- 메인 컨텐츠 ---
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(null);
         contentPanel.setBounds(0, 130, 800, 470);
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        // 우측 상단 "이전 화면" 버튼
         JButton backButton = new JButton("이전 화면");
         backButton.setFont(uiFont.deriveFont(14f));
         backButton.setForeground(Color.WHITE);
@@ -137,9 +132,6 @@ public class ItemDetailFrame extends JFrame {
         });
         contentPanel.add(backButton);
 
-        // ===============================
-        // 📷 아이콘/이미지 영역
-        // ===============================
         JLabel iconLabel = new JLabel();
         iconLabel.setBounds(70, 80, 230, 250);
         iconLabel.setOpaque(true);
@@ -148,28 +140,24 @@ public class ItemDetailFrame extends JFrame {
         iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel.setVerticalAlignment(SwingConstants.CENTER);
 
-        // TODO: DB 연동 시 imagePath로 이미지 로드
         if (imagePath != null && !imagePath.isEmpty()) {
             try {
                 ImageIcon icon = new ImageIcon(imagePath);
                 Image img = icon.getImage().getScaledInstance(220, 240, Image.SCALE_SMOOTH);
                 iconLabel.setIcon(new ImageIcon(img));
-                iconLabel.setText(""); // 이미지 있으면 텍스트 제거
+                iconLabel.setText(""); 
             } catch (Exception e) {
-                // 이미지 로드 실패 시 이모지로 대체
                 iconLabel.setIcon(null);
                 iconLabel.setText(getEmojiForItem(itemName));
                 iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 120));
             }
         } else {
-            // 이미지 없으면 이모지 표시
             iconLabel.setText(getEmojiForItem(itemName));
             iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 120));
         }
 
         contentPanel.add(iconLabel);
 
-        // 대여 가능 여부 라벨
         JLabel statusLabel = new JLabel(status.equals("available") ? "대여 가능" : "대여 불가");
         statusLabel.setFont(uiFont.deriveFont(Font.BOLD, 15f));
         statusLabel.setForeground(BROWN);
@@ -180,14 +168,12 @@ public class ItemDetailFrame extends JFrame {
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         contentPanel.add(statusLabel);
 
-        // 물품 이름
         JLabel nameLabel = new JLabel(itemName);
         nameLabel.setFont(uiFont.deriveFont(Font.BOLD, 40f));
         nameLabel.setForeground(Color.BLACK);
         nameLabel.setBounds(330, 145, 450, 50);
         contentPanel.add(nameLabel);
 
-        // 정보 라벨들
         JLabel stockLabel = new JLabel("남은 재고 : " + stock + "개");
         stockLabel.setFont(uiFont.deriveFont(20f));
         stockLabel.setForeground(new Color(80, 80, 80));
@@ -206,7 +192,6 @@ public class ItemDetailFrame extends JFrame {
         majorLabel.setBounds(330, 280, 400, 30);
         contentPanel.add(majorLabel);
 
-        // 대여하기 버튼 (재고 있고 대여 가능일 때만)
         if (status.equals("available") && stock > 0) {
             JButton rentButton = new JButton("대여하기");
             rentButton.setFont(uiFont.deriveFont(Font.BOLD, 20f));
@@ -218,15 +203,13 @@ public class ItemDetailFrame extends JFrame {
             rentButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             rentButton.addActionListener(e -> {
                 if (isRented) {
-                    showAlreadyRentedDialog();
+                    showSimplePopup("알림", "이미 대여중입니다.");
                 } else {
-                    // TODO: DB 연동 시 실제 재고 감소 쿼리 실행
                     stock--;
                     stockLabel.setText("남은 재고 : " + stock + "개");
                     isRented = true;
-                    showRentalCompleteDialog();
+                    showSimplePopup("성공", "대여가 완료되었습니다.");
 
-                    // 재고가 0이 되면 대여 불가로 변경
                     if (stock == 0) {
                         rentButton.setVisible(false);
                         statusLabel.setText("대여 불가");
@@ -238,83 +221,62 @@ public class ItemDetailFrame extends JFrame {
         }
     }
 
-    // ===============================
-    // 🎨 물품별 이모지 반환
-    // ===============================
     private String getEmojiForItem(String itemName) {
         if (itemName.contains("충전기")) return "⚡";
         if (itemName.contains("노트북")) return "💻";
         if (itemName.contains("책")) return "📚";
         if (itemName.contains("우산")) return "☂️";
         if (itemName.contains("배터리")) return "🔋";
-        return "📦"; // 기본 아이콘
+        return "📦"; 
     }
 
-    // 대여 완료 다이얼로그
-    private void showRentalCompleteDialog() {
-        showMessageDialog("대여가 완료되었습니다.");
-    }
-
-    // 이미 대여중 다이얼로그
-    private void showAlreadyRentedDialog() {
-        showMessageDialog("이미 대여중입니다.");
-    }
-
-    // 공통 메시지 다이얼로그
-    private void showMessageDialog(String message) {
-        JDialog dialog = new JDialog(this, "", true);
-        dialog.setSize(450, 250);
+    // [수정] SpaceRentFrame 스타일 적용 (줄바꿈 로직 포함)
+    private void showSimplePopup(String title, String message) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setSize(400, 250);
         dialog.setLocationRelativeTo(this);
         dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
 
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new RoundedBorder(20, BROWN, 3));
-
-        // 헤더 (노란색)
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBounds(0, 0, 450, 50);
-        headerPanel.setBackground(HIGHLIGHT_YELLOW);
-        headerPanel.setLayout(null);
-
-        JLabel headerLabel = new JLabel("알림");
-        headerLabel.setFont(uiFont.deriveFont(18f));
-        headerLabel.setForeground(BROWN);
-        headerLabel.setBounds(20, 15, 100, 20);
-        headerPanel.add(headerLabel);
-
-        JLabel closeBtn = new JLabel("✕");
-        closeBtn.setFont(uiFont.deriveFont(20f));
-        closeBtn.setForeground(BROWN);
-        closeBtn.setBounds(415, 15, 20, 20);
-        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        closeBtn.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                dialog.dispose();
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
             }
-        });
-        headerPanel.add(closeBtn);
-        panel.add(headerPanel);
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
 
-        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(22f));
-        msgLabel.setForeground(new Color(100, 100, 100));
-        msgLabel.setBounds(50, 90, 350, 50);
-        panel.add(msgLabel);
+        // 메시지 처리 로직
+        String[] lines = message.split("\n");
+        int yPos = (lines.length == 1) ? 80 : 60; 
+
+        for (String line : lines) {
+            JLabel lbl = new JLabel(line, SwingConstants.CENTER);
+            lbl.setFont(uiFont.deriveFont(20f)); // 폰트 적용
+            lbl.setForeground(BROWN);
+            lbl.setBounds(20, yPos, 360, 30);
+            panel.add(lbl);
+            yPos += 30;
+        }
 
         JButton confirmBtn = new JButton("확인");
         confirmBtn.setFont(uiFont.deriveFont(16f));
         confirmBtn.setBackground(BROWN);
         confirmBtn.setForeground(Color.WHITE);
-        confirmBtn.setBounds(150, 170, 150, 45);
+        confirmBtn.setBounds(135, 170, 130, 45);
         confirmBtn.setFocusPainted(false);
-        confirmBtn.setBorderPainted(false);
+        confirmBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         confirmBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         confirmBtn.addActionListener(e -> dialog.dispose());
         panel.add(confirmBtn);
 
-        dialog.add(panel);
         dialog.setVisible(true);
     }
 
@@ -333,10 +295,15 @@ public class ItemDetailFrame extends JFrame {
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("물품대여")) {
-                        new ItemListFrame();
-                        dispose();
+                        new ItemListFrame(); dispose();
+                    } else if (text.equals("과행사")) {
+                        new EventListFrame(); dispose();
+                    } else if (text.equals("공간대여")) {
+                        new SpaceRentFrame(); dispose();
+                    } else if (text.equals("마이페이지")) {
+                        new MainFrame(); dispose();
                     } else {
-                        JOptionPane.showMessageDialog(null, "[" + text + "] 화면으로 이동합니다.");
+                        showSimplePopup("알림", "[" + text + "] 화면으로 이동합니다.");
                     }
                 }
             });
@@ -363,7 +330,6 @@ public class ItemDetailFrame extends JFrame {
     }
 
     public static void main(String[] args) {
-        // 테스트용 (이미지 없을 때 이모지로 표시)
         SwingUtilities.invokeLater(() ->
             new ItemDetailFrame("C타입 충전기", 3, "available", "1", "전체 학과", null)
         );

@@ -17,6 +17,9 @@ public class EventDetailFrame extends JFrame {
     private static final Color ORANGE_CLOSED = new Color(255, 200, 180);
     private static final Color GRAY_BTN = new Color(180, 180, 180);
 
+    // 팝업 배경색
+    private static final Color POPUP_BG = new Color(255, 250, 205);
+
     private static Font uiFont;
 
     static {
@@ -33,20 +36,15 @@ public class EventDetailFrame extends JFrame {
         }
     }
 
-    // ===============================
-    // 📅 행사 정보
-    // TODO: DB 연동 시 EventDTO 객체로 변경
-    // ===============================
     private String eventId;
     private String councilName;
     private String eventName;
-    private String eventType; // "간식" or "참여"
+    private String eventType;
     private String status;
     private int remainingSlots;
     private int totalSlots;
     private boolean isApplied = false;
     
-    // TODO: DB에서 가져올 추가 정보
     private String eventDescription = "소프트웨어융합학과 A+을 위한 간식 행사에 초대합니다!";
     private String eventDate = "12월 1일 오전 10시 ~ 오후 4시";
     private String eventPlace = "누리관 지하 1층";
@@ -74,7 +72,6 @@ public class EventDetailFrame extends JFrame {
     }
 
     private void initUI() {
-        // --- 상단 헤더 ---
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBounds(0, 0, 800, 80);
@@ -107,7 +104,6 @@ public class EventDetailFrame extends JFrame {
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
-        // --- 네비게이션 ---
         JPanel navPanel = new JPanel();
         navPanel.setLayout(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
@@ -121,14 +117,12 @@ public class EventDetailFrame extends JFrame {
             navPanel.add(menuBtn);
         }
 
-        // --- 메인 컨텐츠 ---
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(null);
         contentPanel.setBounds(0, 130, 800, 470);
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        // 우측 상단 "이전 화면" 버튼
         JButton backButton = new JButton("이전 화면");
         backButton.setFont(uiFont.deriveFont(14f));
         backButton.setForeground(Color.WHITE);
@@ -143,7 +137,6 @@ public class EventDetailFrame extends JFrame {
         });
         contentPanel.add(backButton);
 
-        // 상태 라벨 (진행중/사전신청/신청마감)
         JLabel statusLabel = new JLabel(status);
         statusLabel.setFont(uiFont.deriveFont(Font.BOLD, 15f));
         statusLabel.setForeground(BROWN);
@@ -154,14 +147,12 @@ public class EventDetailFrame extends JFrame {
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         contentPanel.add(statusLabel);
 
-        // 행사명
         JLabel nameLabel = new JLabel(eventName);
         nameLabel.setFont(uiFont.deriveFont(Font.BOLD, 32f));
         nameLabel.setForeground(Color.BLACK);
         nameLabel.setBounds(50, 115, 600, 40);
         contentPanel.add(nameLabel);
 
-        // 행사 상세 설명
         JTextArea descArea = new JTextArea(eventDescription);
         descArea.setFont(uiFont.deriveFont(16f));
         descArea.setForeground(new Color(100, 100, 100));
@@ -173,7 +164,6 @@ public class EventDetailFrame extends JFrame {
         descArea.setBounds(50, 165, 650, 40);
         contentPanel.add(descArea);
 
-        // 행사 정보
         JLabel dateLabel = new JLabel("일시 : " + eventDate);
         dateLabel.setFont(uiFont.deriveFont(17f));
         dateLabel.setForeground(new Color(80, 80, 80));
@@ -198,7 +188,6 @@ public class EventDetailFrame extends JFrame {
         slotsLabel.setBounds(50, 310, 600, 25);
         contentPanel.add(slotsLabel);
 
-        // 신청하기 버튼 (신청 가능할 때만)
         if (!status.equals("신청마감") && remainingSlots > 0) {
             JButton applyButton = new JButton("신청하기");
             applyButton.setFont(uiFont.deriveFont(Font.BOLD, 18f));
@@ -210,18 +199,16 @@ public class EventDetailFrame extends JFrame {
             applyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             applyButton.addActionListener(e -> {
                 if (isApplied) {
-                    showMessageDialog("이미 신청하셨습니다.");
+                    showSimplePopup("알림", "이미 신청하셨습니다.");
                 } else {
-                    // TODO: DB에서 학생의 학생회비 납부 여부 확인
                     if (canApply()) {
-                        // 간식 행사면 비밀코드 입력, 참여 행사면 바로 신청
                         if (eventType.equals("간식")) {
                             showSecretCodeDialog(slotsLabel, statusLabel, applyButton);
                         } else {
                             applyEvent(slotsLabel, statusLabel, applyButton);
                         }
                     } else {
-                        showMessageDialog("해당 행사에 참여할 수 없습니다.\n학생회비를 확인해주세요.");
+                        showSimplePopup("알림", "해당 행사에 참여할 수 없습니다.\n학생회비를 확인해주세요.");
                     }
                 }
             });
@@ -229,16 +216,7 @@ public class EventDetailFrame extends JFrame {
         }
     }
 
-    // ===============================
-    // 🎯 참여 가능 여부 확인
-    // TODO: DB 연동 시 실제 학생회비 확인
-    // ===============================
     private boolean canApply() {
-        // 총학생회 -> 학교 학생회비 납부자만
-        // 단과대학 -> 해당 단과대학 학생 + 학교 학생회비
-        // 학과 -> 해당 학과 학생 + 과 학생회비
-        
-        // 임시: 모두 참여 가능으로 설정
         return true;
     }
 
@@ -252,53 +230,46 @@ public class EventDetailFrame extends JFrame {
         }
     }
 
-    // 비밀코드 입력 다이얼로그 (간식 행사용)
     private void showSecretCodeDialog(JLabel slotsLabel, JLabel statusLabel, JButton applyButton) {
-        JDialog dialog = new JDialog(this, "", true);
+        JDialog dialog = new JDialog(this, "비밀코드 입력", true);
         dialog.setSize(450, 300);
         dialog.setLocationRelativeTo(this);
         dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
 
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
         panel.setLayout(null);
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new RoundedBorder(20, BROWN, 3));
+        dialog.add(panel);
 
-        // 헤더
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBounds(0, 0, 450, 50);
-        headerPanel.setBackground(HIGHLIGHT_YELLOW);
-        headerPanel.setLayout(null);
-
-        JLabel headerLabel = new JLabel("○○○");
-        headerLabel.setFont(uiFont.deriveFont(18f));
-        headerLabel.setForeground(BROWN);
-        headerLabel.setBounds(20, 15, 100, 20);
-        headerPanel.add(headerLabel);
-
-        JLabel closeBtn = new JLabel("✕");
+        JLabel closeBtn = new JLabel("X");
         closeBtn.setFont(uiFont.deriveFont(20f));
         closeBtn.setForeground(BROWN);
-        closeBtn.setBounds(415, 15, 20, 20);
+        closeBtn.setBounds(410, 20, 20, 20);
         closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         closeBtn.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                dialog.dispose();
-            }
+            public void mouseClicked(MouseEvent e) { dialog.dispose(); }
         });
-        headerPanel.add(closeBtn);
-        panel.add(headerPanel);
+        panel.add(closeBtn);
 
-        // 비밀코드 입력 영역
         JLabel msgLabel = new JLabel("비밀코드를 입력해주세요", SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(16f));
-        msgLabel.setForeground(new Color(100, 100, 100));
-        msgLabel.setBounds(50, 80, 350, 30);
+        msgLabel.setFont(uiFont.deriveFont(20f));
+        msgLabel.setForeground(BROWN);
+        msgLabel.setBounds(50, 60, 350, 30);
         panel.add(msgLabel);
 
-        // 4자리 비밀코드 입력 필드
         JPanel codePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        codePanel.setBounds(90, 120, 270, 50);
+        codePanel.setBounds(90, 110, 270, 50);
         codePanel.setOpaque(false);
 
         JPasswordField[] codeFields = new JPasswordField[4];
@@ -307,21 +278,19 @@ public class EventDetailFrame extends JFrame {
             field.setFont(uiFont.deriveFont(24f));
             field.setHorizontalAlignment(SwingConstants.CENTER);
             field.setPreferredSize(new Dimension(50, 50));
-            field.setBackground(new Color(220, 220, 230));
-            field.setBorder(BorderFactory.createLineBorder(new Color(150, 150, 150), 2));
+            field.setBackground(Color.WHITE);
+            field.setBorder(BorderFactory.createLineBorder(BROWN, 2));
+            field.setForeground(BROWN);
             
             final int index = i;
             field.addKeyListener(new KeyAdapter() {
                 public void keyTyped(KeyEvent e) {
                     if (field.getPassword().length >= 1) {
                         e.consume();
-                        if (index < 3) {
-                            codeFields[index + 1].requestFocus();
-                        }
+                        if (index < 3) codeFields[index + 1].requestFocus();
                     }
                 }
             });
-            
             codeFields[i] = field;
             codePanel.add(field);
         }
@@ -331,40 +300,32 @@ public class EventDetailFrame extends JFrame {
         confirmBtn.setFont(uiFont.deriveFont(16f));
         confirmBtn.setBackground(BROWN);
         confirmBtn.setForeground(Color.WHITE);
-        confirmBtn.setBounds(150, 210, 150, 45);
+        confirmBtn.setBounds(150, 200, 150, 45);
         confirmBtn.setFocusPainted(false);
-        confirmBtn.setBorderPainted(false);
+        confirmBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         confirmBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         confirmBtn.addActionListener(e -> {
-            // TODO: DB에서 비밀코드 확인
             String inputCode = "";
-            for (JPasswordField field : codeFields) {
-                inputCode += new String(field.getPassword());
-            }
+            for (JPasswordField field : codeFields) inputCode += new String(field.getPassword());
             
-            // 임시 비밀코드: 1234
             if (inputCode.equals("1234")) {
                 dialog.dispose();
                 applyEvent(slotsLabel, statusLabel, applyButton);
             } else {
-                JOptionPane.showMessageDialog(dialog, "비밀코드가 일치하지 않습니다.");
+                showSimplePopup("오류", "비밀코드가 일치하지 않습니다.");
             }
         });
         panel.add(confirmBtn);
 
-        dialog.add(panel);
         dialog.setVisible(true);
     }
 
-    // 행사 신청 처리
     private void applyEvent(JLabel slotsLabel, JLabel statusLabel, JButton applyButton) {
-        // TODO: DB에 신청 정보 저장
         remainingSlots--;
         slotsLabel.setText("남은 인원 : " + remainingSlots + "명");
         isApplied = true;
-        showMessageDialog("신청이 완료되었습니다.");
+        showSimplePopup("성공", "신청이 완료되었습니다.");
 
-        // 남은 인원이 0이면 신청마감으로 변경
         if (remainingSlots == 0) {
             applyButton.setVisible(false);
             statusLabel.setText("신청마감");
@@ -372,61 +333,53 @@ public class EventDetailFrame extends JFrame {
         }
     }
 
-    // 공통 메시지 다이얼로그
-    private void showMessageDialog(String message) {
-        JDialog dialog = new JDialog(this, "", true);
-        dialog.setSize(450, 250);
+    // [수정] SpaceRentFrame 스타일 (HTML 제거, 줄바꿈 로직 적용)
+    private void showSimplePopup(String title, String message) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setSize(400, 250);
         dialog.setLocationRelativeTo(this);
         dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
 
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new RoundedBorder(20, BROWN, 3));
-
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBounds(0, 0, 450, 50);
-        headerPanel.setBackground(HIGHLIGHT_YELLOW);
-        headerPanel.setLayout(null);
-
-        JLabel headerLabel = new JLabel("알림");
-        headerLabel.setFont(uiFont.deriveFont(18f));
-        headerLabel.setForeground(BROWN);
-        headerLabel.setBounds(20, 15, 100, 20);
-        headerPanel.add(headerLabel);
-
-        JLabel closeBtn = new JLabel("✕");
-        closeBtn.setFont(uiFont.deriveFont(20f));
-        closeBtn.setForeground(BROWN);
-        closeBtn.setBounds(415, 15, 20, 20);
-        closeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        closeBtn.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                dialog.dispose();
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
             }
-        });
-        headerPanel.add(closeBtn);
-        panel.add(headerPanel);
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
 
-        JLabel msgLabel = new JLabel("<html><center>" + message.replace("\n", "<br>") + "</center></html>", 
-                                     SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(20f));
-        msgLabel.setForeground(new Color(100, 100, 100));
-        msgLabel.setBounds(50, 80, 350, 70);
-        panel.add(msgLabel);
+        // 메시지 처리 로직 (HTML 대신 JLabel 여러 줄)
+        String[] lines = message.split("\n");
+        int yPos = (lines.length == 1) ? 80 : 60; // 한 줄이면 중앙 정렬 느낌
+
+        for (String line : lines) {
+            JLabel lbl = new JLabel(line, SwingConstants.CENTER);
+            lbl.setFont(uiFont.deriveFont(18f)); // 폰트 적용
+            lbl.setForeground(BROWN);
+            lbl.setBounds(20, yPos, 360, 30);
+            panel.add(lbl);
+            yPos += 30;
+        }
 
         JButton confirmBtn = new JButton("확인");
         confirmBtn.setFont(uiFont.deriveFont(16f));
         confirmBtn.setBackground(BROWN);
         confirmBtn.setForeground(Color.WHITE);
-        confirmBtn.setBounds(150, 170, 150, 45);
+        confirmBtn.setBounds(135, 170, 130, 45);
         confirmBtn.setFocusPainted(false);
-        confirmBtn.setBorderPainted(false);
+        confirmBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         confirmBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         confirmBtn.addActionListener(e -> dialog.dispose());
         panel.add(confirmBtn);
 
-        dialog.add(panel);
         dialog.setVisible(true);
     }
 
@@ -444,14 +397,16 @@ public class EventDetailFrame extends JFrame {
                 public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
-                    if (text.equals("과행사")) {
-                        new EventListFrame();
-                        dispose();
-                    } else if (text.equals("물품대여")) {
-                        new ItemListFrame();
-                        dispose();
+                    if (text.equals("과행사")) return;
+                    
+                    if (text.equals("물품대여")) {
+                        new ItemListFrame(); dispose();
+                    } else if (text.equals("공간대여")) {
+                        new SpaceRentFrame(); dispose();
+                    } else if (text.equals("마이페이지")) {
+                        new MainFrame(); dispose();
                     } else {
-                        JOptionPane.showMessageDialog(null, "[" + text + "] 화면으로 이동합니다.");
+                        showSimplePopup("알림", "[" + text + "] 화면으로 이동합니다.");
                     }
                 }
             });
