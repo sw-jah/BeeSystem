@@ -1,0 +1,408 @@
+package beehub;
+
+import javax.swing.*;
+import javax.swing.border.Border;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.InputStream;
+
+public class EventListFrame extends JFrame {
+
+    private static final Color HEADER_YELLOW = new Color(255, 238, 140);
+    private static final Color NAV_BG = new Color(255, 255, 255);
+    private static final Color BG_MAIN = new Color(255, 255, 255);
+    private static final Color BROWN = new Color(89, 60, 28);
+    private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
+    private static final Color GREEN_PROGRESS = new Color(180, 230, 180);
+    private static final Color ORANGE_CLOSED = new Color(255, 200, 180);
+
+    private static Font uiFont;
+
+    static {
+        try {
+            InputStream is = EventListFrame.class.getResourceAsStream("/fonts/DNFBitBitv2.ttf");
+            if (is == null) uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
+            else uiFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(14f);
+        } catch (Exception e) {
+            uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
+        }
+    }
+
+    private JLabel userInfoText;
+    private JComboBox<String> councilDropdown;
+    private JPanel eventListPanel;
+    private String selectedCouncil = "전체"; // 기본 선택
+
+    // ===============================
+    // 📋 학생회 목록 (모두 독립적인 학생회)
+    // TODO: DB 연동 시 Council 테이블에서 가져오기
+    // ===============================
+    private final String[] councils = {
+        "전체",
+        "총학생회",
+        "───────────────",
+        "인문대학",
+        "글로벌ICT인문융합학부",
+        "국어국문학과",
+        "영어영문학과",
+        "중어중문학과",
+        "일어일문학과",
+        "사학과",
+        "기독교학과",
+        "───────────────",
+        "사회과학대학",
+        "경제학과",
+        "문헌정보학과",
+        "사회복지학과",
+        "아동학과",
+        "행정학과",
+        "언론영상학부",
+        "심리.인지과학학부",
+        "스포츠운동과학과",
+        "───────────────",
+        "과학기술융합대학",
+        "수학과",
+        "화학과",
+        "생명환경공학과",
+        "바이오헬스융합학과",
+        "원예생명조경학과",
+        "식품공학과",
+        "식품영양학과",
+        "───────────────",
+        "미래산업융합대학",
+        "경영학과",
+        "패션산업학과",
+        "디지털미디어학과",
+        "지능정보보호학부",
+        "소프트웨어융합학과",
+        "데이터사이언스학과",
+        "산업디자인학과"
+    };
+
+    // ===============================
+    // 📅 임시 행사 데이터
+    // TODO: DB 연동 시 EventDTO로 변경
+    // ===============================
+    private String[][] events = {
+        // {eventId, councilName, eventName, eventType, status, remainingSlots, totalSlots}
+        {"1", "소프트웨어융합학과", "기말 간식 행사", "간식", "진행중", "15", "20"},
+        {"2", "소프트웨어융합학과", "소융의 밤 행사", "참여", "사전신청", "34", "50"},
+        {"3", "총학생회", "종강파티", "참여", "진행예정", "100", "150"},
+        {"4", "인문대학", "인문대 간식나눔", "간식", "진행중", "25", "30"}
+    };
+
+    public EventListFrame() {
+        setTitle("서울여대 꿀단지 - 과행사");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(null);
+        getContentPane().setBackground(BG_MAIN);
+
+        initUI();
+        loadEvents();
+
+        setVisible(true);
+    }
+
+    private void initUI() {
+        // --- 상단 헤더 ---
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(null);
+        headerPanel.setBounds(0, 0, 800, 80);
+        headerPanel.setBackground(HEADER_YELLOW);
+        add(headerPanel);
+
+        JLabel logoLabel = new JLabel("서울여대 꿀단지");
+        logoLabel.setFont(uiFont.deriveFont(32f));
+        logoLabel.setForeground(BROWN);
+        logoLabel.setBounds(30, 20, 300, 40);
+        headerPanel.add(logoLabel);
+
+        JLabel jarIcon = new JLabel("🍯");
+        jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
+        jarIcon.setBounds(310, 25, 40, 40);
+        headerPanel.add(jarIcon);
+
+        JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
+        userInfoPanel.setBounds(400, 0, 380, 80);
+        userInfoPanel.setOpaque(false);
+
+        JLabel profileIcon = new JLabel("👤");
+        profileIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+
+        userInfoText = new JLabel("[이름]님 | 보유 꿀 : 100 | 로그아웃");
+        userInfoText.setFont(uiFont.deriveFont(14f));
+        userInfoText.setForeground(BROWN);
+
+        userInfoPanel.add(profileIcon);
+        userInfoPanel.add(userInfoText);
+        headerPanel.add(userInfoPanel);
+
+        // --- 네비게이션 ---
+        JPanel navPanel = new JPanel();
+        navPanel.setLayout(new GridLayout(1, 6));
+        navPanel.setBounds(0, 80, 800, 50);
+        navPanel.setBackground(NAV_BG);
+        navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
+        add(navPanel);
+
+        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        for (int i = 0; i < menus.length; i++) {
+            JButton menuBtn = createNavButton(menus[i], i == 1);
+            navPanel.add(menuBtn);
+        }
+
+        // --- 메인 컨텐츠 ---
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(null);
+        contentPanel.setBounds(0, 130, 800, 470);
+        contentPanel.setBackground(BG_MAIN);
+        add(contentPanel);
+
+        // 학생회 드롭다운
+        JLabel councilLabel = new JLabel("학생회");
+        councilLabel.setFont(uiFont.deriveFont(Font.BOLD, 20f));
+        councilLabel.setForeground(BROWN);
+        councilLabel.setBounds(50, 20, 100, 30);
+        contentPanel.add(councilLabel);
+
+        JLabel dropdownIcon = new JLabel("▼");
+        dropdownIcon.setFont(uiFont.deriveFont(14f));
+        dropdownIcon.setForeground(new Color(255, 180, 50));
+        dropdownIcon.setBounds(140, 25, 20, 20);
+        contentPanel.add(dropdownIcon);
+
+        councilDropdown = new JComboBox<>(councils);
+        councilDropdown.setFont(uiFont.deriveFont(14f));
+        councilDropdown.setBounds(50, 60, 270, 35);
+        councilDropdown.setBackground(Color.WHITE);
+        councilDropdown.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 2));
+        councilDropdown.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, 
+                                                         int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value.toString().startsWith("───")) {
+                    setEnabled(false);
+                    setBackground(new Color(240, 240, 240));
+                }
+                return this;
+            }
+        });
+        
+        councilDropdown.addActionListener(e -> {
+            String selected = (String) councilDropdown.getSelectedItem();
+            if (!selected.startsWith("───")) {
+                selectedCouncil = selected;
+                loadEvents();
+            }
+        });
+        contentPanel.add(councilDropdown);
+
+        // 검색 아이콘
+        JLabel searchIcon = new JLabel("🔍");
+        searchIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+        searchIcon.setBounds(330, 65, 30, 30);
+        searchIcon.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        searchIcon.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                loadEvents();
+            }
+        });
+        contentPanel.add(searchIcon);
+
+        // 행사 목록 스크롤 패널
+        eventListPanel = new JPanel();
+        eventListPanel.setLayout(null);
+        eventListPanel.setBackground(BG_MAIN);
+        eventListPanel.setPreferredSize(new Dimension(750, events.length * 150));
+
+        JScrollPane scrollPane = new JScrollPane(eventListPanel);
+        scrollPane.setBounds(25, 120, 750, 330);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getVerticalScrollBar().setUI(new ModernScrollBarUI());
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        contentPanel.add(scrollPane);
+    }
+
+    private void loadEvents() {
+        eventListPanel.removeAll();
+
+        int yPos = 10;
+        for (String[] event : events) {
+            String eventId = event[0];
+            String councilName = event[1];
+            String eventName = event[2];
+            String eventType = event[3]; // "간식" or "참여"
+            String status = event[4];
+            int remainingSlots = Integer.parseInt(event[5]);
+            int totalSlots = Integer.parseInt(event[6]);
+
+            // 선택된 학생회의 행사만 표시 ("전체"면 모두 표시)
+            if (selectedCouncil.equals("전체") || councilName.equals(selectedCouncil)) {
+                addEventCard(eventId, councilName, eventName, eventType, status, 
+                           remainingSlots, totalSlots, yPos);
+                yPos += 140;
+            }
+        }
+
+        if (yPos == 10) {
+            JLabel noResult = new JLabel("등록된 행사가 없습니다.", SwingConstants.CENTER);
+            noResult.setFont(uiFont.deriveFont(20f));
+            noResult.setForeground(new Color(150, 150, 150));
+            noResult.setBounds(0, 100, 750, 50);
+            eventListPanel.add(noResult);
+        }
+
+        eventListPanel.setPreferredSize(new Dimension(750, Math.max(yPos, 320)));
+        eventListPanel.revalidate();
+        eventListPanel.repaint();
+    }
+
+    private void addEventCard(String eventId, String councilName, String eventName, 
+                             String eventType, String status, int remainingSlots, 
+                             int totalSlots, int y) {
+        JPanel card = new JPanel();
+        card.setLayout(null);
+        card.setBounds(10, y, 730, 120);
+        card.setBackground(Color.WHITE);
+        card.setBorder(new RoundedBorder(15, new Color(200, 200, 200), 2));
+
+        // 행사 상태 라벨
+        JLabel typeLabel = new JLabel(status);
+        typeLabel.setFont(uiFont.deriveFont(Font.BOLD, 13f));
+        typeLabel.setForeground(BROWN);
+        typeLabel.setBounds(20, 20, 100, 25);
+        typeLabel.setOpaque(true);
+        typeLabel.setBackground(status.equals("신청마감") ? ORANGE_CLOSED : GREEN_PROGRESS);
+        typeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        card.add(typeLabel);
+
+        // 행사명
+        JLabel nameLabel = new JLabel(eventName);
+        nameLabel.setFont(uiFont.deriveFont(Font.BOLD, 24f));
+        nameLabel.setForeground(Color.BLACK);
+        nameLabel.setBounds(20, 55, 400, 35);
+        card.add(nameLabel);
+
+        // 남은 인원
+        JLabel slotsLabel = new JLabel("남은 인원 : " + remainingSlots + "명");
+        slotsLabel.setFont(uiFont.deriveFont(18f));
+        slotsLabel.setForeground(new Color(100, 100, 100));
+        slotsLabel.setBounds(550, 55, 150, 30);
+        card.add(slotsLabel);
+
+        // 카드 클릭 시 상세화면으로 이동
+        card.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        card.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                // TODO: DB에서 행사 상세 정보 가져오기
+                new EventDetailFrame(eventId, councilName, eventName, eventType, 
+                                    status, remainingSlots, totalSlots);
+                dispose();
+            }
+
+            public void mouseEntered(MouseEvent e) {
+                card.setBackground(new Color(250, 250, 250));
+            }
+
+            public void mouseExited(MouseEvent e) {
+                card.setBackground(Color.WHITE);
+            }
+        });
+
+        eventListPanel.add(card);
+    }
+
+    private JButton createNavButton(String text, boolean isActive) {
+        JButton btn = new JButton(text);
+        btn.setFont(uiFont.deriveFont(16f));
+        btn.setForeground(BROWN);
+        btn.setBackground(isActive ? HIGHLIGHT_YELLOW : NAV_BG);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        if (!isActive) {
+            btn.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
+                public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
+                public void mouseClicked(MouseEvent e) {
+                    if (text.equals("과행사")) return;
+                    if (text.equals("물품대여")) {
+                        new ItemListFrame();
+                        dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(null, "[" + text + "] 화면으로 이동합니다.");
+                    }
+                }
+            });
+        }
+        return btn;
+    }
+
+    class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            this.thumbColor = new Color(200, 200, 200);
+            this.trackColor = new Color(245, 245, 245);
+        }
+
+        @Override
+        protected JButton createDecreaseButton(int orientation) {
+            return createZeroButton();
+        }
+
+        @Override
+        protected JButton createIncreaseButton(int orientation) {
+            return createZeroButton();
+        }
+
+        private JButton createZeroButton() {
+            JButton btn = new JButton();
+            btn.setPreferredSize(new Dimension(0, 0));
+            return btn;
+        }
+
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+            if (!c.isEnabled()) return;
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(thumbColor);
+            g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 10, 10);
+        }
+
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+            g.setColor(trackColor);
+            g.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+        }
+    }
+
+    private static class RoundedBorder implements Border {
+        private int radius;
+        private Color color;
+        private int thickness;
+        public RoundedBorder(int r, Color c, int t) {
+            radius = r; color = c; thickness = t;
+        }
+        public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
+        public boolean isBorderOpaque() { return false; }
+        public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(thickness));
+            g2.drawRoundRect(x, y, w - 1, h - 1, radius, radius);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(EventListFrame::new);
+    }
+}
