@@ -83,6 +83,16 @@ public class CommunityFrame extends JFrame {
 
         setVisible(true);
     }
+    
+    // [추가] 새 Post를 목록에 추가하고 UI를 새로고침하는 공개 메서드
+    public void addPost(Post newPost) {
+        // 새 글의 No를 현재 목록의 최대 No + 1로 설정 (내림차순 정렬을 위해)
+        int maxNo = allPosts.isEmpty() ? 0 : allPosts.stream().mapToInt(p -> p.no).max().orElse(0);
+        newPost.no = maxNo + 1;
+        
+        allPosts.add(0, newPost); // 가장 위에 추가
+        searchPosts(); // 필터링/검색 로직을 다시 실행하고 renderTable()을 호출하여 목록을 새로고침
+    }
 
     private void loadImages() {
         try {
@@ -101,9 +111,9 @@ public class CommunityFrame extends JFrame {
             // 모든 게시글의 초기 댓글 수를 최소 1개(첫 댓글) 이상으로 설정
             int initialComments = 1; 
             if (i == 1) {
+                // 더미 데이터의 no는 역순으로 30부터 1까지 할당
                 allPosts.add(new Post(30, "제가 쓴 글입니다 (테스트)", "사용자", today.toString(), 0, initialComments, "내용"));
             } else {
-                // 기존의 i%5 대신 최소 1을 보장하고 동적인 값(1 + i % 3)을 사용
                 allPosts.add(new Post(30 - i + 1, "게시글 테스트 " + i, "글쓴이" + i, date, i * 2, initialComments + (i % 3), "내용입니다."));
             }
         }
@@ -201,7 +211,12 @@ public class CommunityFrame extends JFrame {
         JButton writeBtn = createStyledButton("글쓰기", 90, 40);
         writeBtn.setBackground(Color.WHITE); 
         writeBtn.setForeground(BROWN);
-        writeBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "글쓰기 기능 준비중입니다."));
+        
+        // [수정] CommunityWriteFrame을 열고 현재 프레임(this)을 전달
+        writeBtn.addActionListener(e -> {
+            // 사용자 이름과 현재 CommunityFrame 객체(this)를 전달
+            new CommunityWriteFrame(userName, this);
+        });
         
         writePanel.add(writeBtn);
 
@@ -239,11 +254,14 @@ public class CommunityFrame extends JFrame {
                     int row = postTable.getSelectedRow();
                     if (row != -1) {
                         TitleWithCommentCount tc = (TitleWithCommentCount) postTable.getValueAt(row, 0);
-                        Post selectedPost = findPostByTitle(tc.title);
+                        Post selectedPost = filteredPosts.get(row); // 현재 필터링된 목록에서 Post 객체 가져옴
+                        
                         if (selectedPost != null) {
+                            // CommunityDetailFrame이 CommunityFrame의 Post 클래스를 사용하도록 수정 필요
+                            // 현재 Post 클래스는 public static이므로 외부에서 접근 가능합니다.
                             CommunityDetailFrame detailFrame = new CommunityDetailFrame(selectedPost, heartIcon, userName); 
                             
-                            // [수정] 상세 프레임이 닫힐 때 목록을 새로고침하도록 WindowListener를 추가
+                            // 상세 프레임이 닫힐 때 목록을 새로고침하도록 WindowListener를 추가
                             detailFrame.addWindowListener(new WindowAdapter() {
                                 @Override
                                 public void windowClosed(WindowEvent e) {
@@ -291,6 +309,9 @@ public class CommunityFrame extends JFrame {
                 .collect(Collectors.toList());
         }
         
+        // 내림차순 정렬 (최신 글이 위로)
+        filteredPosts.sort((p1, p2) -> Integer.compare(p2.no, p1.no));
+
         currentPage = 1;
         renderTable();
     }
@@ -442,7 +463,7 @@ public class CommunityFrame extends JFrame {
     public static class Post {
         int no; String title; String writer; String date; int likes; int comments; String content;
         public Post(int n, String t, String w, String d, int l, int c, String content) {
-            no = n; title = t; writer = w; date = d; likes = l; comments = c; this.content = content;
+            no = n; this.title = t; this.writer = w; this.date = d; this.likes = l; this.comments = c; this.content = content;
         }
     }
 
@@ -514,18 +535,25 @@ public class CommunityFrame extends JFrame {
         }
     }
 
+    // [수정 완료] ModernScrollBarUI: createZeroButton() 메서드를 제거하고 로직을 직접 포함하여 오류 해결
     private static class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
         @Override
         protected void configureScrollBarColors() {
             this.thumbColor = new Color(200, 200, 200);
             this.trackColor = new Color(245, 245, 245);
         }
-        @Override
-        protected JButton createDecreaseButton(int orientation) { return createZeroButton(); }
-        @Override
-        protected JButton createIncreaseButton(int orientation) { return createZeroButton(); }
         
-        private JButton createZeroButton() {
+        @Override
+        protected JButton createDecreaseButton(int orientation) { 
+            // 0 크기의 버튼을 반환하여 스크롤바 화살표를 숨깁니다.
+            JButton btn = new JButton();
+            btn.setPreferredSize(new Dimension(0, 0));
+            return btn;
+        }
+        
+        @Override
+        protected JButton createIncreaseButton(int orientation) { 
+            // 0 크기의 버튼을 반환하여 스크롤바 화살표를 숨깁니다.
             JButton btn = new JButton();
             btn.setPreferredSize(new Dimension(0, 0));
             return btn;
