@@ -98,10 +98,14 @@ public class CommunityFrame extends JFrame {
         LocalDate today = LocalDate.now();
         for (int i = 1; i <= 30; i++) {
             String date = today.minusDays(i).toString();
+            // 모든 게시글의 초기 댓글 수를 최소 1개(첫 댓글) 이상으로 설정
+            int initialComments = 1; 
             if (i == 1) {
-                allPosts.add(new Post(30, "제가 쓴 글입니다 (테스트)", "사용자", today.toString(), 0, 0, "내용"));
+                // [수정] 내 글 (사용자)은 좋아요 50개를 초과할 수 있도록 48개로 설정하고, isRewardGiven = false로 초기화
+                allPosts.add(new Post(30, "제가 쓴 글입니다 (테스트)", "사용자", today.toString(), 48, initialComments, "내용", false));
             } else {
-                allPosts.add(new Post(30 - i + 1, "게시글 테스트 " + i, "글쓴이" + i, date, i * 2, i % 5, "내용입니다."));
+                // 일반 게시글
+                allPosts.add(new Post(30 - i + 1, "게시글 테스트 " + i, "글쓴이" + i, date, i * 2, initialComments + (i % 3), "내용입니다.", false));
             }
         }
     }
@@ -238,7 +242,15 @@ public class CommunityFrame extends JFrame {
                         TitleWithCommentCount tc = (TitleWithCommentCount) postTable.getValueAt(row, 0);
                         Post selectedPost = findPostByTitle(tc.title);
                         if (selectedPost != null) {
-                            new CommunityDetailFrame(selectedPost, heartIcon, userName); 
+                            CommunityDetailFrame detailFrame = new CommunityDetailFrame(selectedPost, heartIcon, userName); 
+                            
+                            // [수정] 상세 프레임이 닫힐 때 목록을 새로고침하도록 WindowListener를 추가
+                            detailFrame.addWindowListener(new WindowAdapter() {
+                                @Override
+                                public void windowClosed(WindowEvent e) {
+                                    renderTable(); // 상세 프레임이 닫힌 후 목록을 새로고침
+                                }
+                            });
                         }
                     }
                 }
@@ -386,7 +398,7 @@ public class CommunityFrame extends JFrame {
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
-            new LoginFrame(); // 로그인 화면으로 이동
+            // new LoginFrame(); // LoginFrame이 정의되어 있다면 주석 해제
             dispose();
         });
         panel.add(yesBtn);
@@ -429,9 +441,9 @@ public class CommunityFrame extends JFrame {
 
     // --- 데이터 클래스 ---
     public static class Post {
-        int no; String title; String writer; String date; int likes; int comments; String content;
-        public Post(int n, String t, String w, String d, int l, int c, String content) {
-            no = n; title = t; writer = w; date = d; likes = l; comments = c; this.content = content;
+        int no; String title; String writer; String date; int likes; int comments; String content; boolean isRewardGiven; // [추가] 보상 지급 여부
+        public Post(int n, String t, String w, String d, int l, int c, String content, boolean isRewardGiven) {
+            no = n; title = t; writer = w; date = d; likes = l; comments = c; this.content = content; this.isRewardGiven = isRewardGiven;
         }
     }
 
@@ -477,6 +489,7 @@ public class CommunityFrame extends JFrame {
                 TitleWithCommentCount tc = (TitleWithCommentCount) value;
                 titleLabel.setText(tc.title);
                 
+                // 댓글 수가 1 이상이면 표시합니다. (첫 댓글 포함)
                 if (tc.commentCount > 0) {
                     countLabel.setText("[" + tc.commentCount + "]");
                 } else {
@@ -608,11 +621,11 @@ public class CommunityFrame extends JFrame {
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("커뮤니티")) return;
-                    if (text.equals("빈 강의실")) { new EmptyClassFrame(); dispose(); }
-                    else if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
-                    else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
-                    else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
-                    else if (text.equals("마이페이지")) { new MainFrame(); dispose(); }
+                    if (text.equals("빈 강의실")) { /* new EmptyClassFrame(); dispose(); */ }
+                    else if (text.equals("공간대여")) { /* new SpaceRentFrame(); dispose(); */ }
+                    else if (text.equals("물품대여")) { /* new ItemListFrame(); dispose(); */ }
+                    else if (text.equals("간식행사") || text.equals("과행사")) { /* new EventListFrame(); dispose(); */ }
+                    else if (text.equals("마이페이지")) { /* new MainFrame(); dispose(); */ }
                     else JOptionPane.showMessageDialog(null, "준비중입니다.");
                 }
             });
