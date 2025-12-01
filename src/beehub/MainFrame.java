@@ -286,14 +286,20 @@ public class MainFrame extends JFrame {
             public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
             public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
             public void mouseClicked(MouseEvent e) {
-                if (text.equals("마이페이지")) return; // 현재 페이지
+                if (text.equals("마이페이지")) {
+                    new MyPageFrame(); // [수정] MyPageFrame 열기
+                    dispose(); // 현재 창 닫기
+                    return;
+                }
                 
                 if (text.equals("공간대여")) {
                     new SpaceRentFrame(); dispose();
-                } else if (text.equals("과행사") || text.equals("간식행사")) {
+                } else if (text.equals("간식행사")) {
                     new EventListFrame(); dispose();
                 } else if (text.equals("물품대여")) {
                     new ItemListFrame(); dispose();
+                } else if (text.equals("커뮤니티")) {
+                    new CommunityFrame(); dispose();
                 } else {
                     showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                 }
@@ -372,7 +378,7 @@ public class MainFrame extends JFrame {
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
-            new LoginFrame(); // 로그인 화면으로 이동
+            // new LoginFrame(); // 로그인 화면으로 이동
             dispose();
         });
         panel.add(yesBtn);
