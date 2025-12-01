@@ -77,13 +77,13 @@ public class AdminMainFrame extends JFrame {
         menuContainer.setOpaque(false);
         add(menuContainer);
 
-        menuContainer.add(createMenuButton("📦 물품 관리", e -> {
+        menuContainer.add(createMenuButton("물품 관리", e -> {
             new AdminItemManageFrame(); // 물품 관리 화면 열기
             dispose();
         }));
-        menuContainer.add(createMenuButton("📑 대여 관리", e -> showMsg("준비 중입니다.")));
-        menuContainer.add(createMenuButton("🏢 장소 대여", e -> showMsg("준비 중입니다.")));
-        menuContainer.add(createMenuButton("🎁 경품 추첨", e -> showMsg("준비 중입니다.")));
+        menuContainer.add(createMenuButton("대여 관리", e -> showMsg("준비 중입니다.")));
+        menuContainer.add(createMenuButton("장소 대여", e -> showMsg("준비 중입니다.")));
+        menuContainer.add(createMenuButton("경품 추첨", e -> showMsg("준비 중입니다.")));
     }
 
     private JButton createMenuButton(String text, ActionListener action) {
