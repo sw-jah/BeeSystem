@@ -100,10 +100,31 @@ public class MyPageFrame extends JFrame {
         }
     }
     
-    public static class ApplicationItem {
-        String eventTitle; String applicationDate; boolean isWinning; boolean isChecked; 
-        public ApplicationItem(String title, String date, boolean winning, boolean checked) {
-            this.eventTitle = title; this.applicationDate = date; this.isWinning = winning; this.isChecked = checked;
+    // [수정] 응모함 기능 재구성을 위한 새로운 데이터 구조
+    
+    public static class LotteryRound {
+        int roundNo; 
+        String prize; 
+        String announceDate; // YYYY-MM-DD
+        int maxWinners;
+        String pickUpDate;
+        String pickUpLocation;
+        
+        public LotteryRound(int no, String prize, String announce, int winners, String pickupDate, String pickupLoc) {
+            this.roundNo = no; this.prize = prize; this.announceDate = announce; this.maxWinners = winners;
+            this.pickUpDate = pickupDate; this.pickUpLocation = pickupLoc;
+        }
+    }
+
+    // 사용자 응모 기록 (중복 응모 가능하므로 List로 관리)
+    public static class UserApplication {
+        LotteryRound round;
+        String applicationDate; 
+        boolean isWinning; 
+        int entryCount; // 응모 횟수
+        
+        public UserApplication(LotteryRound round, String appDate, boolean winning, int count) {
+            this.round = round; this.applicationDate = appDate; this.isWinning = winning; this.entryCount = count;
         }
     }
 
@@ -114,7 +135,7 @@ public class MyPageFrame extends JFrame {
     private String userId = "202390000";
     private String userNickname = "꿀벌학생";
     private String userPassword = "password123";
-    private int userPoint = 100;
+    private int userPoint = 250; // [수정] 테스트를 위해 꿀을 250으로 설정
     
     // UI 컴포넌트
     private JList<String> menuList;
@@ -130,7 +151,10 @@ public class MyPageFrame extends JFrame {
     private List<RentalItem> dummyRentals; 
     private List<SpaceRentalItem> dummySpaceRentals; 
     private List<EventParticipationItem> dummyEvents; 
-    private List<ApplicationItem> dummyApplications; // [수정] 필드 정의
+    // [수정] 응모함 더미 데이터 필드 변경
+    private List<LotteryRound> dummyRounds;
+    private List<UserApplication> dummyUserApplications;
+
 
     // 프레임 크기 및 레이아웃 상수
     private final int FRAME_WIDTH = 800;
@@ -229,21 +253,25 @@ public class MyPageFrame extends JFrame {
         // USER_CANCELLED (사용자 취소)
         dummyEvents.add(new EventParticipationItem("캡스톤 디자인 발표회", "2025-12-20", "13:00", false, ReservationStatus.USER_CANCELLED)); 
 
-        // 응모함 더미 데이터
-        dummyApplications = new ArrayList<>(); // [수정] 리스트 초기화
-        // 당첨
-        dummyApplications.add(new ApplicationItem("기말고사 응원 간식", "2025-11-20", true, false));
-        // 미당첨
-        dummyApplications.add(new ApplicationItem("10월 선착순 굿즈", "2025-10-15", false, true));
-        // 당첨
-        dummyApplications.add(new ApplicationItem("취업 특강 경품", "2025-11-05", true, true));
-        // 미당첨
-        dummyApplications.add(new ApplicationItem("크리스마스 파티 응모", "2025-11-30", false, false));
+        // [수정] 응모함 더미 데이터 (최신 회차일수록 숫자가 커지도록 순서 및 회차 번호 수정)
+        dummyRounds = new ArrayList<>();
+        // 1회차: 가장 오래된 날짜 (2025-10-10 발표)
+        dummyRounds.add(new LotteryRound(1, "아이패드 미니", "2025-10-10", 1, "2025-10-12", "정보통신처")); 
+        // 2회차: 중간 날짜 (2025-11-25 발표)
+        dummyRounds.add(new LotteryRound(2, "교보문고 5만원 상품권", "2025-11-25", 5, "2025-11-26", "도서관 행정실")); 
+        // 3회차: 가장 최신 날짜 (2025-12-10 발표)
+        dummyRounds.add(new LotteryRound(3, "스타벅스 텀블러", "2025-12-10", 30, "2025-12-11", "학생회관 101호")); 
+
+        dummyUserApplications = new ArrayList<>();
+        // 2회차 응모 - 당첨 (교보문고, Index 1)
+        dummyUserApplications.add(new UserApplication(dummyRounds.get(1), "2025-11-20", true, 2));
+        // 1회차 응모 - 미당첨 (아이패드 미니, Index 0)
+        dummyUserApplications.add(new UserApplication(dummyRounds.get(0), "2025-10-05", false, 5));
     }
 
     // 꿀 포인트에 따른 등급 계산
     private String getRank(int point) {
-        if (point >= 200) return "여왕벌 👑";
+        if (point >= 200) return "여왕벌";
         if (point >= 100) return "꿀벌";
         return "일벌";
     }
@@ -392,7 +420,7 @@ public class MyPageFrame extends JFrame {
         detailPanel.add(createEventListPanel(), "과 행사 참여 기록"); 
 
         // 8. 응모함
-        detailPanel.add(createApplicationPanel(), "응모함"); 
+        detailPanel.add(createApplicationPanel(), "응모함"); // [수정] 새로운 응모함 패널 연결
         
         // 9. 초기 화면 (카테고리 헤더용)
         JPanel welcomePanel = createPlaceholderPanel("환영합니다!", userName + "님의 마이페이지입니다.");
@@ -588,52 +616,101 @@ public class MyPageFrame extends JFrame {
         return panel;
     }
 
-    // [추가] 응모함 패널 생성
+    // [수정] 응모함 패널 생성 (응모/당첨 확인 기능 포함)
     private JPanel createApplicationPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(null); // Use null layout for precise control
+        panel.setName("응모함"); // **수정: 패널의 이름을 설정하여 refresh 시 찾을 수 있도록 함**
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JLabel titleLabel = new JLabel("응모함", SwingConstants.LEFT);
+        // 1. Title
+        JLabel titleLabel = new JLabel("꿀단지 응모함", SwingConstants.LEFT);
         titleLabel.setFont(uiFont.deriveFont(Font.BOLD, 24f)); 
         titleLabel.setForeground(BROWN);
-        panel.add(titleLabel, BorderLayout.NORTH);
+        titleLabel.setBounds(20, 10, 500, 30);
+        panel.add(titleLabel);
 
-        // 테이블 모델 및 데이터 준비
-        String[] headers = {"행사명", "응모 일자", "상태", "결과"};
+        int y = 50;
+
+        // 2. Point Status & Rule
+        JPanel pointStatusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        pointStatusPanel.setBounds(20, y, DETAIL_WIDTH - 40, 40);
+        pointStatusPanel.setOpaque(false);
+        
+        JLabel pointTitle = createLabel("나의 보유 꿀:");
+        pointTitle.setFont(uiFont.deriveFont(Font.BOLD, 18f));
+        pointStatusPanel.add(pointTitle);
+        
+        // 응모 후 업데이트를 위해 이 라벨을 저장합니다.
+        JLabel currentPointLabel = createLabel(userPoint + "꿀");
+        currentPointLabel.setFont(uiFont.deriveFont(Font.BOLD, 18f));
+        currentPointLabel.setForeground(WINNER_GREEN);
+        pointStatusPanel.add(currentPointLabel);
+        
+        JLabel ruleLabel = createLabel(" (응모 방식: 100꿀 당 1회 응모, 중복 신청 가능)");
+        ruleLabel.setFont(uiFont.deriveFont(14f));
+        pointStatusPanel.add(ruleLabel);
+        
+        panel.add(pointStatusPanel);
+        y += 50;
+
+        // 3. Buttons
+        JButton applyBtn = createStyledButton("응모하기", 150, 45);
+        applyBtn.setBounds(100, y, 150, 45);
+        applyBtn.addActionListener(e -> showApplyPopup(currentPointLabel));
+        panel.add(applyBtn);
+
+        JButton checkBtn = createStyledButton("당첨확인하기", 150, 45);
+        checkBtn.setBounds(270, y, 150, 45);
+        checkBtn.addActionListener(e -> showCheckWinningPopup());
+        panel.add(checkBtn);
+        y += 60;
+        
+        // 4. Past Application List (나의 응모 기록)
+        JLabel historyTitle = new JLabel("나의 응모 기록", SwingConstants.LEFT);
+        historyTitle.setFont(uiFont.deriveFont(Font.BOLD, 20f));
+        historyTitle.setForeground(BROWN);
+        historyTitle.setBounds(20, y, 500, 30);
+        panel.add(historyTitle);
+        y += 40;
+
+        String[] headers = {"회차", "경품 항목", "응모 횟수", "응모 일자"};
+        // 테이블 모델을 final로 선언하여 팝업에서 데이터 변경 후 리프레시를 시도할 수 있도록 합니다.
         DefaultTableModel tableModel = new DefaultTableModel(headers, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
-        
-        for (ApplicationItem item : dummyApplications) {
-            String status = "응모 완료";
-            String result = item.isWinning ? "당첨" : "미당첨";
-            tableModel.addRow(new Object[]{item.eventTitle, item.applicationDate, status, result});
+
+        for (UserApplication item : dummyUserApplications) {
+            tableModel.addRow(new Object[]{
+                item.round.roundNo, 
+                item.round.prize, 
+                item.entryCount, 
+                item.applicationDate
+            });
         }
-        
+
         JTable applicationTable = new JTable(tableModel);
         styleTable(applicationTable);
         
-        // 컬럼 너비 설정
-        applicationTable.getColumnModel().getColumn(0).setPreferredWidth(200); // 행사명
-        applicationTable.getColumnModel().getColumn(1).setPreferredWidth(120); // 응모 일자
-        applicationTable.getColumnModel().getColumn(2).setPreferredWidth(100); // 상태
-        applicationTable.getColumnModel().getColumn(3).setPreferredWidth(100); // 결과
+        applicationTable.getColumnModel().getColumn(0).setPreferredWidth(50);
+        applicationTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+        applicationTable.getColumnModel().getColumn(2).setPreferredWidth(80);
+        applicationTable.getColumnModel().getColumn(3).setPreferredWidth(100);
         
-        // 컬럼 렌더러 적용
+        // 중앙 정렬 렌더러 적용
         applicationTable.getColumnModel().getColumn(0).setCellRenderer(new CenterRenderer());
         applicationTable.getColumnModel().getColumn(1).setCellRenderer(new CenterRenderer());
         applicationTable.getColumnModel().getColumn(2).setCellRenderer(new CenterRenderer());
-        
-        // 결과 컬럼에 색상 렌더러 적용
-        applicationTable.getColumnModel().getColumn(3).setCellRenderer(new ApplicationResultRenderer());
+        applicationTable.getColumnModel().getColumn(3).setCellRenderer(new CenterRenderer());
         
         JScrollPane scrollPane = new JScrollPane(applicationTable);
         scrollPane.getViewport().setBackground(Color.WHITE);
         scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
+        scrollPane.setBounds(20, y, DETAIL_WIDTH - 40, CONTENT_HEIGHT - y - 60); 
 
-        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(scrollPane);
+
         return panel;
     }
 
@@ -702,6 +779,299 @@ public class MyPageFrame extends JFrame {
                 }
             }
         });
+    }
+
+    // [수정] 응모 기간이 지난 회차를 필터링하는 응모하기 팝업 구현
+    private void showApplyPopup(JLabel pointLabel) {
+        // [추가] 응모 가능 회차 필터링
+        LocalDate today = LocalDate.of(2025, 12, 1);
+        List<LotteryRound> availableRounds = dummyRounds.stream()
+            .filter(r -> {
+                try {
+                    // 발표일(마감일로 간주)이 오늘 이후이거나 오늘과 같아야 함
+                    return !LocalDate.parse(r.announceDate).isBefore(today);
+                } catch (Exception e) {
+                    return false; 
+                }
+            })
+            .collect(Collectors.toList());
+
+        if (availableRounds.isEmpty()) {
+            showCustomAlertPopup("응모 불가", "현재 응모 가능한 경품 회차가 없습니다.");
+            return;
+        }
+
+        JDialog dialog = new JDialog(this, "경품 응모하기", true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(500, 500); 
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = createPopupPanel();
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        int y = 30;
+
+        JLabel title = new JLabel("꿀단지 경품 응모", SwingConstants.CENTER);
+        title.setFont(uiFont.deriveFont(Font.BOLD, 22f));
+        title.setForeground(BROWN);
+        title.setBounds(10, y, 480, 30);
+        panel.add(title);
+        y += 50;
+        
+        // 현재 포인트 표시
+        JLabel currentPointInfo = createLabel("나의 보유 꿀: " + userPoint + "꿀");
+        currentPointInfo.setFont(uiFont.deriveFont(18f));
+        currentPointInfo.setBounds(30, y, 440, 30);
+        panel.add(currentPointInfo);
+        y += 40;
+
+        // 회차 선택
+        JLabel roundSelectLabel = createLabel("응모할 회차 선택:");
+        roundSelectLabel.setBounds(30, 0 + y, 200, 30);
+        panel.add(roundSelectLabel);
+        
+        // 콤보박스 데이터 생성
+        List<String> roundTitles = availableRounds.stream()
+            .map(r -> r.roundNo + "회차: " + r.prize)
+            .collect(Collectors.toList());
+        
+        JComboBox<String> roundCombo = new JComboBox<>(roundTitles.toArray(new String[0]));
+        roundCombo.setFont(uiFont.deriveFont(16f));
+        roundCombo.setBounds(200, 0 + y, 250, 30);
+        panel.add(roundCombo);
+        y += 40;
+        
+        // 선택된 라운드 정보 표시 영역
+        JTextArea infoArea = new JTextArea();
+        infoArea.setFont(uiFont.deriveFont(16f));
+        infoArea.setEditable(false);
+        infoArea.setOpaque(false);
+        infoArea.setLineWrap(true);
+        infoArea.setWrapStyleWord(true);
+        infoArea.setBounds(30, y, 440, 100);
+        panel.add(infoArea);
+        
+        // 초기 정보 업데이트
+        LotteryRound selectedRound = availableRounds.get(roundCombo.getSelectedIndex());
+        updateApplyInfoArea(infoArea, selectedRound);
+        
+        // 콤보박스 리스너: 선택 변경 시 정보 업데이트
+        roundCombo.addActionListener(e -> {
+            LotteryRound r = availableRounds.get(roundCombo.getSelectedIndex());
+            updateApplyInfoArea(infoArea, r);
+        });
+        
+        y += 110;
+
+        // 응모 횟수 입력
+        JLabel countLabel = createLabel("응모 횟수 (1회당 100꿀):");
+        countLabel.setBounds(30, y, 200, 30);
+        panel.add(countLabel);
+        
+        JTextField countField = new JTextField("1");
+        countField.setFont(uiFont.deriveFont(16f));
+        countField.setBounds(250, y, 100, 30);
+        panel.add(countField);
+        y += 60;
+
+
+        // 응모하기 버튼
+        JButton applyFinalBtn = createPopupBtn("응모하기");
+        applyFinalBtn.setBounds(100, y, 150, 45);
+        applyFinalBtn.addActionListener(e -> {
+            try {
+                int count = Integer.parseInt(countField.getText().trim());
+                if (count <= 0) {
+                     showCustomAlertPopup("경고", "응모 횟수는 1회 이상이어야 합니다.");
+                     return;
+                }
+                int requiredPoints = count * 100;
+                if (userPoint < requiredPoints) {
+                    showCustomAlertPopup("오류", "꿀이 부족합니다! (현재 " + userPoint + "꿀, " + requiredPoints + "꿀 필요)");
+                    return;
+                }
+                
+                showCustomConfirmPopup("총 " + count + "회 (" + requiredPoints + "꿀) 응모하시겠습니까?", () -> {
+                    // 포인트 차감
+                    userPoint -= requiredPoints;
+                    
+                    // UI 업데이트
+                    pointLabel.setText(userPoint + "꿀");
+                    currentPointInfo.setText("나의 보유 꿀: " + userPoint + "꿀");
+                    
+                    // 응모 기록 업데이트 (모의)
+                    LotteryRound r = availableRounds.get(roundCombo.getSelectedIndex());
+                    
+                    UserApplication existingApp = dummyUserApplications.stream()
+                        .filter(app -> app.round.roundNo == r.roundNo)
+                        .findFirst().orElse(null);
+                    
+                    if (existingApp != null) {
+                        existingApp.entryCount += count;
+                    } else {
+                        // isWinning은 응모 당시에는 false로 설정
+                        dummyUserApplications.add(new UserApplication(r, LocalDate.now().toString(), false, count));
+                    }
+                    
+                    // 성공 팝업 및 창 닫기
+                    dialog.dispose();
+                    showCustomAlertPopup("응모 완료", r.roundNo + "회차에\n총 " + count + "회 응모되었습니다.\n남은 꿀: " + userPoint + "꿀");
+                    
+                    // 마이페이지 메인 화면의 포인트 및 응모함 목록 업데이트 (간단히 응모함 패널을 새로고침)
+                    refreshApplicationPanel();
+                });
+                
+            } catch (NumberFormatException ex) {
+                showCustomAlertPopup("오류", "유효한 숫자를 입력해주세요.");
+            }
+        });
+        panel.add(applyFinalBtn);
+            
+        // 취소 버튼
+        JButton cancelBtn = createPopupBtn("취소");
+        cancelBtn.setBounds(260, y, 120, 45);
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        panel.add(cancelBtn);
+
+        dialog.setVisible(true);
+    }
+    
+    // 응모 정보 표시 헬퍼
+    private void updateApplyInfoArea(JTextArea area, LotteryRound round) {
+        String info = String.format(
+            "회차: %d회차\n당첨 발표 날짜: %s\n경품 항목: %s\n당첨 인원: %d명",
+            round.roundNo,
+            round.announceDate,
+            round.prize,
+            round.maxWinners
+        );
+        area.setText(info);
+    }
+    
+    // [수정] 당첨 발표일 체크 로직이 추가된 당첨 확인 팝업 구현
+    private void showCheckWinningPopup() {
+        JDialog dialog = new JDialog(this, "당첨 확인하기", true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(450, 450); 
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = createPopupPanel();
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        int y = 30;
+
+        JLabel title = new JLabel("경품 응모 당첨 확인", SwingConstants.CENTER);
+        title.setFont(uiFont.deriveFont(Font.BOLD, 22f));
+        title.setForeground(BROWN);
+        title.setBounds(10, y, 430, 30);
+        panel.add(title);
+        y += 50;
+
+        // 회차 선택
+        JLabel roundSelectLabel = createLabel("회차 카테고리 선택:");
+        roundSelectLabel.setBounds(30, y, 200, 30);
+        panel.add(roundSelectLabel);
+        
+        List<String> roundTitles = dummyRounds.stream()
+            .map(r -> r.roundNo + "회차: " + r.prize)
+            .collect(Collectors.toList());
+        
+        JComboBox<String> roundCombo = new JComboBox<>(roundTitles.toArray(new String[0]));
+        roundCombo.setFont(uiFont.deriveFont(16f));
+        roundCombo.setBounds(220, y, 200, 30);
+        panel.add(roundCombo);
+        y += 50;
+        
+        // 결과 표시 영역
+        JTextArea resultArea = new JTextArea("확인 버튼을 눌러주세요.");
+        resultArea.setFont(uiFont.deriveFont(18f));
+        resultArea.setForeground(BROWN);
+        resultArea.setEditable(false);
+        resultArea.setOpaque(false);
+        resultArea.setLineWrap(true);
+        resultArea.setWrapStyleWord(true);
+        resultArea.setBounds(30, y, 390, 120);
+        panel.add(resultArea);
+        y += 140;
+
+        // 확인 버튼
+        JButton confirmBtn = createPopupBtn("확인");
+        confirmBtn.setBounds(100, y, 110, 45);
+        confirmBtn.addActionListener(e -> {
+            int selectedIndex = roundCombo.getSelectedIndex();
+            LotteryRound selectedRound = dummyRounds.get(selectedIndex);
+            
+            String resultText;
+            Color resultColor;
+
+            // 기준 날짜를 2025-12-01로 고정
+            LocalDate today = LocalDate.of(2025, 12, 1);
+            LocalDate announceDate = LocalDate.parse(selectedRound.announceDate);
+
+            // [추가] 당첨 발표일이 아직 안 지난 경우 체크
+            if (announceDate.isAfter(today)) {
+                resultText = "아직 당첨자 발표 기간이 아닙니다. (발표일: " + selectedRound.announceDate + ")";
+                resultColor = BROWN;
+            } else {
+                // 당첨자 발표가 난 후, 응모 기록 확인
+                UserApplication userApp = dummyUserApplications.stream()
+                    .filter(app -> app.round.roundNo == selectedRound.roundNo)
+                    .findFirst().orElse(null);
+                    
+                if (userApp == null) {
+                    // 미참여
+                    resultText = "미참여 (응모 기록 없음)";
+                    resultColor = BROWN;
+                } else if (userApp.isWinning) {
+                    // 당첨
+                    resultText = "*당첨* \n수령 일자: " + selectedRound.pickUpDate + "\n수령 장소: " + selectedRound.pickUpLocation;
+                    resultColor = WINNER_GREEN;
+                } else {
+                    // 미당첨 (응모했으나 당첨되지 않음)
+                    resultText = "미당첨";
+                    resultColor = OVERDUE_RED;
+                }
+            }
+            
+            resultArea.setText(resultText);
+            resultArea.setForeground(resultColor);
+            resultArea.setFont(uiFont.deriveFont(Font.BOLD, 18f));
+        });
+        panel.add(confirmBtn);
+            
+        // 닫기 버튼
+        JButton closeBtn = createPopupBtn("닫기");
+        closeBtn.setBounds(230, y, 110, 45);
+        closeBtn.addActionListener(e -> dialog.dispose());
+        panel.add(closeBtn);
+
+        dialog.setVisible(true);
+    }
+    
+    // 응모 후 응모함 패널을 새로고침하는 헬퍼 메서드
+    private void refreshApplicationPanel() {
+        // 기존 응모함 패널 제거
+        Component[] components = detailPanel.getComponents();
+        for (Component comp : components) {
+            // **수정: cardLayout.getConstraints(comp) 대신 comp.getName()을 확인**
+            if ("응모함".equals(comp.getName())) {
+                detailPanel.remove(comp);
+                break;
+            }
+        }
+        
+        // 새로운 응모함 패널 추가
+        JPanel newApplicationPanel = createApplicationPanel();
+        detailPanel.add(newApplicationPanel, "응모함");
+        
+        // 응모함 화면을 다시 표시
+        cardLayout.show(detailPanel, "응모함");
+        detailPanel.revalidate();
+        detailPanel.repaint();
     }
 
 
@@ -798,6 +1168,7 @@ public class MyPageFrame extends JFrame {
         
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            // **수정: super.getListCellRendererComponent(table, value, index, isSelected, cellHasFocus) 부분을 수정**
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             JLabel label = (JLabel) c;
             
@@ -870,37 +1241,6 @@ public class MyPageFrame extends JFrame {
                 } else {
                     label.setForeground(BROWN); // 일반 D-Day
                 }
-            }
-            
-            return label;
-        }
-    }
-
-    // 응모함 결과 렌더러
-    class ApplicationResultRenderer extends DefaultTableCellRenderer {
-        public ApplicationResultRenderer() {
-            setHorizontalAlignment(JLabel.CENTER);
-        }
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            JLabel label = (JLabel) c;
-            
-            label.setFont(uiFont.deriveFont(Font.BOLD, 16f)); 
-
-            if (isSelected) {
-                label.setBackground(HIGHLIGHT_YELLOW);
-            } else {
-                label.setBackground(Color.WHITE);
-            }
-            
-            String resultText = value.toString();
-            label.setText(resultText);
-            
-            if (resultText.equals("당첨")) {
-                label.setForeground(WINNER_GREEN);
-            } else {
-                label.setForeground(OVERDUE_RED); // 미당첨은 빨간색으로
             }
             
             return label;
@@ -1176,7 +1516,7 @@ public class MyPageFrame extends JFrame {
                  showCustomAlertPopup("오류", "비밀번호는 6자 이상이어야 합니다.");
             } else {
                 // 비밀번호 변경 성공 처리 (더미 데이터 업데이트)
-                // userPassword = newPwd; 
+                userPassword = newPwd; 
                 dialog.dispose();
                 showCustomAlertPopup("변경 완료", "비밀번호가 성공적으로 변경되었습니다.");
             }
