@@ -17,73 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// CommunityFrame의 Post 클래스를 사용할 수 없으므로, 내부 클래스로 정의
-class MyPagePost {
-    int no; String title; String writer; String date; int likes; int comments; String content;
-    public MyPagePost(int n, String t, String w, String d, int l, int c, String content) {
-        this.no = n; this.title = t; this.writer = w; this.date = d; this.likes = l; this.comments = c; this.content = content;
-    }
-}
-
-// 물품 대여 기록을 위한 데이터 구조
-class RentalItem {
-    String itemName;
-    String returnDate; // YYYY-MM-DD format
-    boolean isReturned;
-
-    public RentalItem(String name, String date, boolean returned) {
-        this.itemName = name;
-        this.returnDate = date;
-        this.isReturned = returned;
-    }
-}
-
-// 예약 상태 Enum
-enum ReservationStatus {
-    CANCELLABLE, // 취소 가능 (미래 예약)
-    COMPLETED,   // 완료 (이미 사용했거나 시간이 지난 예약)
-    USER_CANCELLED, // 사용자 취소 완료
-    AUTO_CANCELLED  // 시스템 자동 취소 (10분 미입장 등)
-}
-
-
-// 공간 대여 기록을 위한 데이터 구조
-class SpaceRentalItem {
-    String roomName;
-    String reservationDate; // YYYY-MM-DD
-    String startTime;       // HH:MM
-    String endTime;         // HH:MM
-    int headcount;
-    ReservationStatus status; 
-    
-    public SpaceRentalItem(String name, String date, String startTime, String endTime, int count, ReservationStatus status) {
-        this.roomName = name;
-        this.reservationDate = date;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.headcount = count;
-        this.status = status;
-    }
-}
-
-// 과 행사 참여 기록을 위한 데이터 구조
-class EventParticipationItem {
-    String eventTitle;
-    String eventDate; // YYYY-MM-DD
-    String eventTime; // HH:MM
-    boolean requiresSecretCode; // 비밀코드 여부
-    ReservationStatus status; 
-
-    public EventParticipationItem(String title, String date, String time, boolean requiresCode, ReservationStatus status) {
-        this.eventTitle = title;
-        this.eventDate = date;
-        this.eventTime = time;
-        this.requiresSecretCode = requiresCode;
-        this.status = status;
-    }
-}
-
-
 public class MyPageFrame extends JFrame {
 
     // 🎨 컬러 테마
@@ -97,6 +30,8 @@ public class MyPageFrame extends JFrame {
     private static final Color LINK_COLOR = new Color(0, 102, 204);
     private static final Color OVERDUE_RED = new Color(200, 50, 50);
     private static final Color CANCEL_RED = new Color(200, 50, 50);
+    private static final Color WINNER_GREEN = new Color(0, 150, 0);
+
 
     private static final String FONT_NAME_HTML = "던파 비트비트체 v2"; 
 
@@ -123,13 +58,62 @@ public class MyPageFrame extends JFrame {
             uiFont = new Font("SansSerif", Font.PLAIN, 14);
         }
     }
+    
+    // ==========================================================
+    // 📊 DATA STRUCTURES (Nested Static Classes for accessibility)
+    // ==========================================================
+
+    public static class MyPagePost {
+        int no; String title; String writer; String date; int likes; int comments; String content;
+        public MyPagePost(int n, String t, String w, String d, int l, int c, String content) {
+            this.no = n; this.title = t; this.writer = w; this.date = d; this.likes = l; this.comments = c; this.content = content;
+        }
+    }
+
+    public static class RentalItem {
+        String itemName;
+        String returnDate; // YYYY-MM-DD format
+        boolean isReturned;
+
+        public RentalItem(String name, String date, boolean returned) {
+            this.itemName = name;
+            this.returnDate = date;
+            this.isReturned = returned;
+        }
+    }
+
+    public static enum ReservationStatus {
+        CANCELLABLE, COMPLETED, USER_CANCELLED, AUTO_CANCELLED
+    }
+
+    public static class SpaceRentalItem {
+        String roomName; String reservationDate; String startTime; String endTime; int headcount; ReservationStatus status; 
+        public SpaceRentalItem(String name, String date, String startTime, String endTime, int count, ReservationStatus status) {
+            this.roomName = name; this.reservationDate = date; this.startTime = startTime; this.endTime = endTime; this.headcount = count; this.status = status;
+        }
+    }
+
+    public static class EventParticipationItem {
+        String eventTitle; String eventDate; String eventTime; boolean requiresSecretCode; ReservationStatus status; 
+        public EventParticipationItem(String title, String date, String time, boolean requiresCode, ReservationStatus status) {
+            this.eventTitle = title; this.eventDate = date; this.eventTime = time; this.requiresSecretCode = requiresCode; this.status = status;
+        }
+    }
+    
+    public static class ApplicationItem {
+        String eventTitle; String applicationDate; boolean isWinning; boolean isChecked; 
+        public ApplicationItem(String title, String date, boolean winning, boolean checked) {
+            this.eventTitle = title; this.applicationDate = date; this.isWinning = winning; this.isChecked = checked;
+        }
+    }
+
 
     // 사용자 정보 (더미 데이터)
     private String userName = "김꿀단지";
     private String userDept = "소프트웨어융합학과";
     private String userId = "202390000";
     private String userNickname = "꿀벌학생";
-    private String userPassword = "password123"; // 임시 비밀번호
+    private String userPassword = "password123";
     private int userPoint = 100;
     
     // UI 컴포넌트
@@ -146,6 +130,7 @@ public class MyPageFrame extends JFrame {
     private List<RentalItem> dummyRentals; 
     private List<SpaceRentalItem> dummySpaceRentals; 
     private List<EventParticipationItem> dummyEvents; 
+    private List<ApplicationItem> dummyApplications; // [수정] 필드 정의
 
     // 프레임 크기 및 레이아웃 상수
     private final int FRAME_WIDTH = 800;
@@ -243,6 +228,17 @@ public class MyPageFrame extends JFrame {
         dummyEvents.add(new EventParticipationItem("총학생회 간식 배부", "2025-12-05", "12:00", true, ReservationStatus.COMPLETED)); 
         // USER_CANCELLED (사용자 취소)
         dummyEvents.add(new EventParticipationItem("캡스톤 디자인 발표회", "2025-12-20", "13:00", false, ReservationStatus.USER_CANCELLED)); 
+
+        // 응모함 더미 데이터
+        dummyApplications = new ArrayList<>(); // [수정] 리스트 초기화
+        // 당첨
+        dummyApplications.add(new ApplicationItem("기말고사 응원 간식", "2025-11-20", true, false));
+        // 미당첨
+        dummyApplications.add(new ApplicationItem("10월 선착순 굿즈", "2025-10-15", false, true));
+        // 당첨
+        dummyApplications.add(new ApplicationItem("취업 특강 경품", "2025-11-05", true, true));
+        // 미당첨
+        dummyApplications.add(new ApplicationItem("크리스마스 파티 응모", "2025-11-30", false, false));
     }
 
     // 꿀 포인트에 따른 등급 계산
@@ -396,8 +392,7 @@ public class MyPageFrame extends JFrame {
         detailPanel.add(createEventListPanel(), "과 행사 참여 기록"); 
 
         // 8. 응모함
-        JPanel applicationPanel = createPlaceholderPanel("응모함", "참여한 행사 응모 현황 및 결과가 표시됩니다.");
-        detailPanel.add(applicationPanel, "응모함");
+        detailPanel.add(createApplicationPanel(), "응모함"); 
         
         // 9. 초기 화면 (카테고리 헤더용)
         JPanel welcomePanel = createPlaceholderPanel("환영합니다!", userName + "님의 마이페이지입니다.");
@@ -593,6 +588,56 @@ public class MyPageFrame extends JFrame {
         return panel;
     }
 
+    // [추가] 응모함 패널 생성
+    private JPanel createApplicationPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        JLabel titleLabel = new JLabel("응모함", SwingConstants.LEFT);
+        titleLabel.setFont(uiFont.deriveFont(Font.BOLD, 24f)); 
+        titleLabel.setForeground(BROWN);
+        panel.add(titleLabel, BorderLayout.NORTH);
+
+        // 테이블 모델 및 데이터 준비
+        String[] headers = {"행사명", "응모 일자", "상태", "결과"};
+        DefaultTableModel tableModel = new DefaultTableModel(headers, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        
+        for (ApplicationItem item : dummyApplications) {
+            String status = "응모 완료";
+            String result = item.isWinning ? "당첨" : "미당첨";
+            tableModel.addRow(new Object[]{item.eventTitle, item.applicationDate, status, result});
+        }
+        
+        JTable applicationTable = new JTable(tableModel);
+        styleTable(applicationTable);
+        
+        // 컬럼 너비 설정
+        applicationTable.getColumnModel().getColumn(0).setPreferredWidth(200); // 행사명
+        applicationTable.getColumnModel().getColumn(1).setPreferredWidth(120); // 응모 일자
+        applicationTable.getColumnModel().getColumn(2).setPreferredWidth(100); // 상태
+        applicationTable.getColumnModel().getColumn(3).setPreferredWidth(100); // 결과
+        
+        // 컬럼 렌더러 적용
+        applicationTable.getColumnModel().getColumn(0).setCellRenderer(new CenterRenderer());
+        applicationTable.getColumnModel().getColumn(1).setCellRenderer(new CenterRenderer());
+        applicationTable.getColumnModel().getColumn(2).setCellRenderer(new CenterRenderer());
+        
+        // 결과 컬럼에 색상 렌더러 적용
+        applicationTable.getColumnModel().getColumn(3).setCellRenderer(new ApplicationResultRenderer());
+        
+        JScrollPane scrollPane = new JScrollPane(applicationTable);
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+        return panel;
+    }
+
+
     // [추가] 공간 예약 취소 액션 리스너 설정
     private void setupSpaceRentalCancelListener(JTable table, DefaultTableModel tableModel) {
         table.addMouseListener(new MouseAdapter() {
@@ -606,7 +651,7 @@ public class MyPageFrame extends JFrame {
 
                     if (item.status == ReservationStatus.CANCELLABLE) {
                         String confirmMsg = "'" + item.roomName + " (" +
-                            item.reservationDate + ")' 예약을\n취소하시겠습니까?";
+                            item.reservationDate + ")' 예약을 취소하시겠습니까?";
                         
                         showCustomConfirmPopup(confirmMsg, () -> {
                             // 상태 변경
@@ -651,8 +696,7 @@ public class MyPageFrame extends JFrame {
                             
                             // 성공 팝업
                             showCustomAlertPopup("참여 취소 완료", 
-                                item.eventTitle + " "
-                                		+ "\n취소 완료되었습니다.");
+                                item.eventTitle + " 참여가\n취소 완료되었습니다.");
                         });
                     }
                 }
@@ -826,6 +870,37 @@ public class MyPageFrame extends JFrame {
                 } else {
                     label.setForeground(BROWN); // 일반 D-Day
                 }
+            }
+            
+            return label;
+        }
+    }
+
+    // 응모함 결과 렌더러
+    class ApplicationResultRenderer extends DefaultTableCellRenderer {
+        public ApplicationResultRenderer() {
+            setHorizontalAlignment(JLabel.CENTER);
+        }
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            JLabel label = (JLabel) c;
+            
+            label.setFont(uiFont.deriveFont(Font.BOLD, 16f)); 
+
+            if (isSelected) {
+                label.setBackground(HIGHLIGHT_YELLOW);
+            } else {
+                label.setBackground(Color.WHITE);
+            }
+            
+            String resultText = value.toString();
+            label.setText(resultText);
+            
+            if (resultText.equals("당첨")) {
+                label.setForeground(WINNER_GREEN);
+            } else {
+                label.setForeground(OVERDUE_RED); // 미당첨은 빨간색으로
             }
             
             return label;
@@ -1058,7 +1133,7 @@ public class MyPageFrame extends JFrame {
         JDialog dialog = new JDialog(this, "비밀번호 수정", true);
         dialog.setUndecorated(true);
         dialog.setBackground(new Color(0, 0, 0, 0));
-        dialog.setSize(500, 400); // 더 넓고 긴 팝업
+        dialog.setSize(500, 450); // 더 넓고 긴 팝업
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = createPopupPanel();
@@ -1138,7 +1213,7 @@ public class MyPageFrame extends JFrame {
         JDialog dialog = new JDialog(this, "닉네임 수정", true);
         dialog.setUndecorated(true);
         dialog.setBackground(new Color(0,0,0,0));
-        dialog.setSize(400, 350); // [수정] 팝업 크기 조정
+        dialog.setSize(400, 350); 
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = createPopupPanel();
@@ -1148,7 +1223,7 @@ public class MyPageFrame extends JFrame {
         JLabel msgLabel = new JLabel("새 닉네임을 입력하세요.", SwingConstants.CENTER);
         msgLabel.setFont(uiFont.deriveFont(18f));
         msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 70, 360, 60); // [수정] Y 위치와 높이 확대 (클리핑 방지)
+        msgLabel.setBounds(20, 70, 360, 60); 
         panel.add(msgLabel);
         
         JTextField inputField = new JTextField(userNickname);
@@ -1157,7 +1232,7 @@ public class MyPageFrame extends JFrame {
         panel.add(inputField);
 
         JButton saveBtn = createPopupBtn("저장");
-        saveBtn.setBounds(60, 220, 120, 45); // [수정] Y 위치 조정
+        saveBtn.setBounds(60, 220, 120, 45); 
         saveBtn.addActionListener(e -> {
             String newNickname = inputField.getText().trim();
             if (newNickname.isEmpty() || newNickname.length() > 10) {
@@ -1172,7 +1247,7 @@ public class MyPageFrame extends JFrame {
         panel.add(saveBtn);
 
         JButton cancelBtn = createPopupBtn("취소");
-        cancelBtn.setBounds(220, 220, 120, 45); // [수정] Y 위치 조정
+        cancelBtn.setBounds(220, 220, 120, 45); 
         cancelBtn.addActionListener(e -> dialog.dispose());
         panel.add(cancelBtn);
 
@@ -1210,7 +1285,7 @@ public class MyPageFrame extends JFrame {
         panel.setLayout(null);
         dialog.add(panel);
         
-        // [수정] JTextArea 사용: 폰트 적용 및 클리핑 해결
+        // JTextArea 사용: 폰트 적용 및 클리핑 해결
         JTextArea msgArea = new JTextArea(message);
         msgArea.setFont(uiFont.deriveFont(18f));
         msgArea.setForeground(BROWN);
