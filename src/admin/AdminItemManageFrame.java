@@ -55,7 +55,7 @@ public class AdminItemManageFrame extends JFrame {
         titleLabel.setBounds(30, 20, 200, 40);
         headerPanel.add(titleLabel);
 
-        JButton homeBtn = new JButton("🏠 메인으로");
+        JButton homeBtn = new JButton("<- 메인으로");
         homeBtn.setFont(uiFont.deriveFont(14f));
         homeBtn.setBackground(BROWN);
         homeBtn.setForeground(Color.WHITE);
