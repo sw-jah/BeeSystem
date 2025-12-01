@@ -18,7 +18,6 @@ public class CommunityDetailFrame extends JFrame {
     private static final Color AUTHOR_HIGHLIGHT = new Color(255, 180, 0); 
 
     private static Font uiFont;
-    // [수정 완료] 실제 시스템 폰트명("던파 비트비트체 v2")으로 설정되었습니다.
     private static final String FONT_NAME_HTML = "던파 비트비트체 v2"; 
 
     static {
@@ -51,11 +50,23 @@ public class CommunityDetailFrame extends JFrame {
     private boolean isLiked = false; 
     private JLabel commentTitle; 
     private JButton likeBtn;
+    
+    // [수정] 게시글 수정 후 내용을 업데이트하기 위해 필드로 변경
+    private JLabel postTitle;
+    private JLabel writerInfo;
+    private JTextArea contentArea;
+    private JLabel likeLabel; 
+    
+    // [추가] CommunityFrame 참조를 위해 필드 추가
+    private CommunityFrame parentFrame; 
 
-    public CommunityDetailFrame(Post post, ImageIcon icon, String user) {
+
+    // [수정] CommunityFrame 인자를 추가
+    public CommunityDetailFrame(Post post, ImageIcon icon, String user, CommunityFrame parent) {
         this.currentPost = post;
         this.heartIcon = icon;
         this.currentUser = user;
+        this.parentFrame = parent; // 부모 프레임 참조 저장
 
         // [추가] 윈도우 닫기 리스너를 추가하여 Post 객체의 댓글 수를 업데이트
         addWindowListener(new WindowAdapter() {
@@ -94,19 +105,22 @@ public class CommunityDetailFrame extends JFrame {
         infoPanel.setBackground(Color.WHITE);
         infoPanel.setBorder(new RoundedBorder(15, BORDER_COLOR, 2));
 
-        JLabel postTitle = new JLabel(currentPost.title);
+        // [수정] 필드 사용
+        postTitle = new JLabel(currentPost.title);
         postTitle.setFont(uiFont.deriveFont(Font.BOLD, 22f));
         postTitle.setBounds(20, 15, 500, 30);
         infoPanel.add(postTitle);
 
-        JLabel writerInfo = new JLabel("작성자: " + currentPost.writer + "  |  " + currentPost.date);
+        // [수정] 필드 사용
+        writerInfo = new JLabel("작성자: " + currentPost.writer + "  |  " + currentPost.date);
         writerInfo.setFont(uiFont.deriveFont(14f));
         writerInfo.setForeground(Color.GRAY);
         writerInfo.setBounds(20, 55, 300, 20);
         infoPanel.add(writerInfo);
         
         // 좋아요 수
-        JLabel likeLabel = new JLabel(" " + currentPost.likes);
+        // [수정] 필드 사용
+        likeLabel = new JLabel(" " + currentPost.likes);
         if (heartIcon != null) likeLabel.setIcon(heartIcon);
         likeLabel.setFont(uiFont.deriveFont(16f));
         likeLabel.setForeground(new Color(255, 100, 100));
@@ -116,7 +130,8 @@ public class CommunityDetailFrame extends JFrame {
         add(infoPanel);
 
         // 3. 본문
-        JTextArea contentArea = new JTextArea(currentPost.content);
+        // [수정] 필드 사용
+        contentArea = new JTextArea(currentPost.content);
         contentArea.setFont(uiFont.deriveFont(16f)); 
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
@@ -156,7 +171,12 @@ public class CommunityDetailFrame extends JFrame {
             JLabel editLink = createTextLink("수정"); 
             editLink.addMouseListener(new MouseAdapter() { 
                 public void mouseClicked(MouseEvent e) { 
-                    showCustomAlertPopup("수정 기능", "게시글 수정을 시작합니다.");
+                    // [수정] CommunityWriteFrame을 수정 모드로 엽니다.
+                    if (parentFrame != null) {
+                        new CommunityWriteFrame(currentUser, parentFrame, currentPost, CommunityDetailFrame.this);
+                    } else {
+                         showCustomAlertPopup("오류", "부모 프레임 참조가 없어 수정할 수 없습니다.");
+                    }
                 }
             });
             
@@ -164,7 +184,15 @@ public class CommunityDetailFrame extends JFrame {
             deleteLink.setForeground(new Color(200, 50, 50)); 
             deleteLink.addMouseListener(new MouseAdapter() { 
                 public void mouseClicked(MouseEvent e) { 
-                    showCustomConfirmPopup("게시글을 삭제하시겠습니까?", () -> dispose());
+                    // [수정] 삭제 확인 후 CommunityFrame의 deletePost 메서드 호출
+                    showCustomConfirmPopup("게시글을 삭제하시겠습니까?", () -> {
+                        if (parentFrame != null) {
+                            parentFrame.deletePost(currentPost); 
+                            dispose(); // 상세 프레임 닫기
+                        } else {
+                            showCustomAlertPopup("오류", "부모 프레임 참조가 없어 삭제할 수 없습니다.");
+                        }
+                    });
                 }
             });
 
@@ -246,6 +274,22 @@ public class CommunityDetailFrame extends JFrame {
         }
         likeLabel.setText(" " + currentPost.likes);
     }
+    
+    // [추가] 게시글 수정 완료 후 내용을 업데이트하는 메서드
+    public void updatePostContent(Post updatedPost) {
+        this.currentPost = updatedPost;
+        
+        // UI 컴포넌트 업데이트
+        postTitle.setText(updatedPost.title);
+        writerInfo.setText("작성자: " + updatedPost.writer + "  |  " + updatedPost.date);
+        contentArea.setText(updatedPost.content);
+        
+        // 좋아요 및 댓글 수는 수정에서 변경되지 않으므로 생략 (Post 객체만 업데이트)
+        
+        getContentPane().revalidate();
+        getContentPane().repaint();
+    }
+
 
     // [최종 수정] 텍스트 링크 생성 헬퍼 (폰트 적용: <font face> 태그 강제 사용)
     private JLabel createTextLink(String text) {

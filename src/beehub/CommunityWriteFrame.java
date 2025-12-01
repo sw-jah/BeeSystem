@@ -15,18 +15,12 @@ import beehub.CommunityFrame.Post;
 
 public class CommunityWriteFrame extends JFrame {
 
-    // ===============================
-    // 🎨 컬러 테마 (CommunityDetailFrame.java 참고)
-    // ===============================
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color BROWN = new Color(89, 60, 28);
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BORDER_COLOR = new Color(220, 220, 220);
     private static final Color POPUP_BG = new Color(255, 250, 205); 
 
-    // ===============================
-    // 🔤 폰트 설정 (CommunityDetailFrame.java 참고)
-    // ===============================
     private static Font uiFont;
     private static final String FONT_NAME_HTML = "던파 비트비트체 v2"; 
 
@@ -53,20 +47,29 @@ public class CommunityWriteFrame extends JFrame {
     }
 
     private String currentUser; 
-    private CommunityFrame parentFrame; // ★ CommunityFrame 참조 필드
+    private CommunityFrame parentFrame; 
+    private CommunityFrame.Post postToEdit; // null이면 작성, 아니면 수정
+    private CommunityDetailFrame detailParent; // 수정 완료 후 디테일 뷰 업데이트용
     private JTextField titleField;
     private JTextArea contentArea;
 
     /**
-     * 게시글 작성 프레임을 생성합니다.
-     * @param user 현재 로그인한 사용자 ID
-     * @param parent 글 등록 후 목록을 업데이트할 부모 CommunityFrame
+     * 게시글 작성 프레임을 생성합니다. (글 작성 모드)
      */
-    public CommunityWriteFrame(String user, CommunityFrame parent) { // ★ parent 인자 추가
+    public CommunityWriteFrame(String user, CommunityFrame parent) {
+        this(user, parent, null, null);
+    }
+    
+    /**
+     * 게시글 수정 프레임을 생성합니다. (글 수정 모드)
+     */
+    public CommunityWriteFrame(String user, CommunityFrame parent, CommunityFrame.Post postToEdit, CommunityDetailFrame detailParent) {
         this.currentUser = user;
-        this.parentFrame = parent; // ★ 부모 프레임 참조 저장
+        this.parentFrame = parent; 
+        this.postToEdit = postToEdit;
+        this.detailParent = detailParent;
 
-        setTitle("게시글 작성");
+        setTitle(postToEdit != null ? "게시글 수정" : "게시글 작성");
         setSize(600, 700);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -82,7 +85,8 @@ public class CommunityWriteFrame extends JFrame {
         JPanel header = new JPanel(new BorderLayout());
         header.setBounds(0, 0, 600, 50);
         header.setBackground(HEADER_YELLOW);
-        JLabel title = new JLabel(" 커뮤니티 > 게시글 작성", JLabel.LEFT);
+        // 제목 변경
+        JLabel title = new JLabel(" 커뮤니티 > 게시글 " + (postToEdit != null ? "수정" : "작성"), JLabel.LEFT);
         title.setFont(uiFont.deriveFont(18f));
         title.setForeground(BROWN);
         header.add(title, BorderLayout.WEST);
@@ -118,11 +122,17 @@ public class CommunityWriteFrame extends JFrame {
         contentScroll.setBounds(20, 190, 545, 380);
         contentScroll.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
         add(contentScroll);
+        
+        // [추가] 수정 모드일 때 기존 내용 로드
+        if (postToEdit != null) {
+            titleField.setText(postToEdit.title);
+            contentArea.setText(postToEdit.content);
+        }
 
         // 4. 버튼 영역
         
-        // (A) 등록 버튼
-        JButton submitBtn = createStyledButton("등록", 150, 50);
+        // (A) 등록 버튼 (수정 모드일 때 '수정 완료'로 변경)
+        JButton submitBtn = createStyledButton(postToEdit != null ? "수정 완료" : "등록", 150, 50);
         submitBtn.setBounds(415, 600, 150, 50);
         submitBtn.addActionListener(e -> handleSubmit());
         add(submitBtn);
@@ -130,7 +140,6 @@ public class CommunityWriteFrame extends JFrame {
         // (B) 취소 버튼 (돌아가기)
         JButton cancelBtn = createStyledButton("취소", 100, 50);
         cancelBtn.setBounds(295, 600, 100, 50);
-        // 취소 버튼 색상 변경
         Color CANCEL_COLOR = new Color(150, 150, 150); 
         cancelBtn.setBackground(CANCEL_COLOR);
         cancelBtn.setBorder(new RoundedBorder(15, CANCEL_COLOR, 1));
@@ -138,9 +147,6 @@ public class CommunityWriteFrame extends JFrame {
         add(cancelBtn);
     }
     
-    /**
-     * 등록 버튼 클릭 시 호출, 제목/내용 유효성 검사 및 등록 확인 팝업 표시
-     */
     private void handleSubmit() {
         String title = titleField.getText().trim();
         String content = contentArea.getText().trim();
@@ -155,25 +161,42 @@ public class CommunityWriteFrame extends JFrame {
             return;
         }
 
-        // 등록 확인 팝업
-        showCustomConfirmPopup("게시글을 등록하시겠습니까?", () -> {
+        // 등록/수정 확인 팝업
+        String confirmMessage = postToEdit != null ? "게시글을 수정하시겠습니까?" : "게시글을 등록하시겠습니까?";
+        showCustomConfirmPopup(confirmMessage, () -> {
             
-            // 1. 새 Post 객체 생성
-            // [수정] LocalDate.now().toString()은 기본 ISO 포맷 (YYYY-MM-DD)을 반환하여
-            // CommunityFrame의 formatDate 메서드가 파싱할 수 있도록 합니다.
-            String date = LocalDate.now().toString(); 
-            
-            // Post 생성자: (int no, String title, String writer, String date, int likes, int comments, String content)
-            CommunityFrame.Post newPost = new CommunityFrame.Post(0, title, currentUser, date, 0, 0, content); 
+            if (postToEdit != null) {
+                // ★★★ 수정 로직 ★★★
+                // 1. Post 객체 필드 업데이트
+                postToEdit.title = title;
+                postToEdit.content = content;
+                
+                // 2. 상세 뷰 업데이트 (DetailFrame)
+                if (detailParent != null) {
+                    detailParent.updatePostContent(postToEdit);
+                }
+                
+                // 3. 목록 뷰 업데이트 (CommunityFrame)
+                if (parentFrame != null) {
+                    parentFrame.searchPosts(); // 목록 새로고침
+                }
+                
+                showCustomAlertPopup("수정 완료", "게시글이 성공적으로 수정되었습니다.");
+                
+            } else {
+                // ★★★ 작성 로직 ★★★
+                String date = LocalDate.now().toString(); 
+                // Post 생성자: (int no, String title, String writer, String date, int likes, int comments, String content)
+                CommunityFrame.Post newPost = new CommunityFrame.Post(0, title, currentUser, date, 0, 0, content); 
 
-            // 2. 부모 CommunityFrame에 Post 추가 (목록 새로고침)
-            if (parentFrame != null) {
-                parentFrame.addPost(newPost); // ★ 부모 프레임의 addPost 메소드 호출
+                if (parentFrame != null) {
+                    parentFrame.addPost(newPost);
+                }
+
+                showCustomAlertPopup("등록 완료", "게시글이 성공적으로 등록되었습니다.");
             }
-
-            // 3. 완료 알림 및 창 닫기
-            showCustomAlertPopup("등록 완료", "게시글이 성공적으로 등록되었습니다.");
-            dispose(); // 등록 완료 후 창 닫기
+            
+            dispose(); // 창 닫기
         });
     }
 
@@ -277,9 +300,6 @@ public class CommunityWriteFrame extends JFrame {
         dialog.setVisible(true);
     }
 
-    /**
-     * CommunityDetailFrame.java에 있는 테두리 둥글게 처리 클래스
-     */
     private static class RoundedBorder implements Border {
         private int radius; private Color color; private int thickness;
         public RoundedBorder(int r, Color c, int t) { radius = r; color = c; thickness = t; }
@@ -295,7 +315,6 @@ public class CommunityWriteFrame extends JFrame {
     }
     
     public static void main(String[] args) {
-        // 테스트를 위해 임시 CommunityFrame을 생성해야 함
         CommunityFrame dummyParent = new CommunityFrame();
         SwingUtilities.invokeLater(() -> new CommunityWriteFrame("테스트사용자", dummyParent));
     }
