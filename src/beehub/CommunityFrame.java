@@ -101,11 +101,10 @@ public class CommunityFrame extends JFrame {
             // 모든 게시글의 초기 댓글 수를 최소 1개(첫 댓글) 이상으로 설정
             int initialComments = 1; 
             if (i == 1) {
-                // [수정] 내 글 (사용자)은 좋아요 50개를 초과할 수 있도록 48개로 설정하고, isRewardGiven = false로 초기화
-                allPosts.add(new Post(30, "제가 쓴 글입니다 (테스트)", "사용자", today.toString(), 48, initialComments, "내용", false));
+                allPosts.add(new Post(30, "제가 쓴 글입니다 (테스트)", "사용자", today.toString(), 0, initialComments, "내용"));
             } else {
-                // 일반 게시글
-                allPosts.add(new Post(30 - i + 1, "게시글 테스트 " + i, "글쓴이" + i, date, i * 2, initialComments + (i % 3), "내용입니다.", false));
+                // 기존의 i%5 대신 최소 1을 보장하고 동적인 값(1 + i % 3)을 사용
+                allPosts.add(new Post(30 - i + 1, "게시글 테스트 " + i, "글쓴이" + i, date, i * 2, initialComments + (i % 3), "내용입니다."));
             }
         }
     }
@@ -441,9 +440,9 @@ public class CommunityFrame extends JFrame {
 
     // --- 데이터 클래스 ---
     public static class Post {
-        int no; String title; String writer; String date; int likes; int comments; String content; boolean isRewardGiven; // [추가] 보상 지급 여부
-        public Post(int n, String t, String w, String d, int l, int c, String content, boolean isRewardGiven) {
-            no = n; title = t; writer = w; date = d; likes = l; comments = c; this.content = content; this.isRewardGiven = isRewardGiven;
+        int no; String title; String writer; String date; int likes; int comments; String content;
+        public Post(int n, String t, String w, String d, int l, int c, String content) {
+            no = n; title = t; writer = w; date = d; likes = l; comments = c; this.content = content;
         }
     }
 

@@ -234,25 +234,12 @@ public class CommunityDetailFrame extends JFrame {
         add(addCommentBtn);
     }
     
-    // [수정] 좋아요 액션 핸들러: 50개 초과 시 20꿀 지급 로직 추가
     private void handleLikeAction(JLabel likeLabel) {
         if (!isLiked) {
             currentPost.likes++;
             isLiked = true;
             likeBtn.setBackground(new Color(255, 240, 240)); 
             showCustomAlertPopup("좋아요", "이 글을 좋아합니다!"); 
-            
-            // [추가된 로직] 내 글(currentUser)이고, 좋아요가 50을 초과했으며, 아직 보상이 지급되지 않았다면 꿀 지급
-            if (currentPost.writer.equals(currentUser) && 
-                currentPost.likes > 50 && 
-                !currentPost.isRewardGiven) {
-                
-                // 20꿀 지급 시뮬레이션
-                currentPost.isRewardGiven = true;
-                // 실제 사용자에게 20꿀을 지급했다는 팝업을 표시합니다.
-                showCustomAlertPopup("🎉 꿀 보상 지급! 🎉", "축하합니다! 좋아요 50개 초과로 20꿀이 지급되었습니다!");
-            }
-            
         } else {
             showCustomAlertPopup("알림", "이미 좋아요를 눌렀습니다.");
             return;
