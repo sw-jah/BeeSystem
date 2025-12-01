@@ -98,7 +98,7 @@ public class MyPageFrame extends JFrame {
     private static final Color OVERDUE_RED = new Color(200, 50, 50);
     private static final Color CANCEL_RED = new Color(200, 50, 50);
 
-    private static final String FONT_NAME_HTML = "던파 비트비트체 v2"; // [추가] HTML 폰트명 상수
+    private static final String FONT_NAME_HTML = "던파 비트비트체 v2"; 
 
     private static Font uiFont;
 
@@ -129,6 +129,7 @@ public class MyPageFrame extends JFrame {
     private String userDept = "소프트웨어융합학과";
     private String userId = "202390000";
     private String userNickname = "꿀벌학생";
+    private String userPassword = "password123"; // 임시 비밀번호
     private int userPoint = 100;
     
     // UI 컴포넌트
@@ -531,30 +532,7 @@ public class MyPageFrame extends JFrame {
         // 예약 취소 액션 리스너
         JTable finalSpaceRentalTable = spaceRentalTable;
         DefaultTableModel finalSpaceTableModel = tableModel;
-        spaceRentalTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int row = finalSpaceRentalTable.rowAtPoint(e.getPoint());
-                int col = finalSpaceRentalTable.columnAtPoint(e.getPoint());
-                
-                // 상태/취소 컬럼 클릭 시
-                if (col == 3 && row >= 0 && row < dummySpaceRentals.size()) {
-                    SpaceRentalItem item = dummySpaceRentals.get(row);
-                    
-                    if (item.status == ReservationStatus.CANCELLABLE) {
-                        showCustomConfirmPopup(
-                            "'" + item.roomName + " (" + item.reservationDate + ")' 예약을 취소하시겠습니까?", // 팝업 메시지
-                            () -> {
-                                // 상태 변경 및 테이블 새로고침
-                                item.status = ReservationStatus.USER_CANCELLED;
-                                finalSpaceTableModel.fireTableDataChanged(); // [수정] 모델에 변경 사항 알림
-                                showCustomAlertPopup("취소 완료", item.roomName + " 예약이 취소 완료되었습니다.");
-                            }
-                        );
-                    }
-                }
-            }
-        });
+        setupSpaceRentalCancelListener(finalSpaceRentalTable, finalSpaceTableModel);
 
 
         JScrollPane scrollPane = new JScrollPane(spaceRentalTable);
@@ -583,7 +561,6 @@ public class MyPageFrame extends JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         
-        // 데이터 로딩
         for (EventParticipationItem item : dummyEvents) {
             // item 객체 자체를 테이블에 넣어 렌더러가 상태를 확인하도록 함
             tableModel.addRow(new Object[]{item.eventTitle, item, item.status}); 
@@ -605,29 +582,8 @@ public class MyPageFrame extends JFrame {
         // 예약 취소 액션 리스너
         JTable finalEventTable = eventTable;
         DefaultTableModel finalEventTableModel = tableModel;
-        eventTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int row = finalEventTable.rowAtPoint(e.getPoint());
-                int col = finalEventTable.columnAtPoint(e.getPoint());
-                
-                if (col == 2 && row >= 0 && row < dummyEvents.size()) {
-                    EventParticipationItem item = dummyEvents.get(row);
-                    
-                    if (item.status == ReservationStatus.CANCELLABLE) {
-                        showCustomConfirmPopup(
-                            "'" + item.eventTitle + " (" + item.eventDate + ")' 참여를 취소하시겠습니까?",
-                            () -> {
-                                // 상태 변경 및 테이블 새로고침
-                                item.status = ReservationStatus.USER_CANCELLED;
-                                finalEventTableModel.fireTableDataChanged(); // [수정] 모델에 변경 사항 알림
-                                showCustomAlertPopup("참여 취소 완료", item.eventTitle + " 참여가 취소 완료되었습니다.");
-                            }
-                        );
-                    }
-                }
-            }
-        });
+        setupEventCancelListener(finalEventTable, finalEventTableModel);
+
 
         JScrollPane scrollPane = new JScrollPane(eventTable);
         scrollPane.getViewport().setBackground(Color.WHITE);
@@ -635,6 +591,73 @@ public class MyPageFrame extends JFrame {
 
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
+    }
+
+    // [추가] 공간 예약 취소 액션 리스너 설정
+    private void setupSpaceRentalCancelListener(JTable table, DefaultTableModel tableModel) {
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+
+                if (col == 3 && row >= 0 && row < dummySpaceRentals.size()) {
+                    SpaceRentalItem item = dummySpaceRentals.get(row);
+
+                    if (item.status == ReservationStatus.CANCELLABLE) {
+                        String confirmMsg = "'" + item.roomName + " (" +
+                            item.reservationDate + ")' 예약을\n취소하시겠습니까?";
+                        
+                        showCustomConfirmPopup(confirmMsg, () -> {
+                            // 상태 변경
+                            item.status = ReservationStatus.USER_CANCELLED;
+                            
+                            // 테이블 업데이트
+                            tableModel.setValueAt(item.status, row, 3);
+                            tableModel.fireTableDataChanged(); 
+                            
+                            // 성공 팝업
+                            showCustomAlertPopup("취소 완료", 
+                                item.roomName + " 예약이\n취소 완료되었습니다.");
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    // [추가] 과 행사 취소 액션 리스너 설정
+    private void setupEventCancelListener(JTable table, DefaultTableModel tableModel) {
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+
+                if (col == 2 && row >= 0 && row < dummyEvents.size()) {
+                    EventParticipationItem item = dummyEvents.get(row);
+
+                    if (item.status == ReservationStatus.CANCELLABLE) {
+                        String confirmMsg = "'" + item.eventTitle + " (" + 
+                            item.eventDate + ")' 참여를 취소하시겠습니까?";
+                        
+                        showCustomConfirmPopup(confirmMsg, () -> {
+                            // 상태 변경
+                            item.status = ReservationStatus.USER_CANCELLED;
+                            
+                            // 테이블 업데이트
+                            tableModel.setValueAt(item.status, row, 2);
+                            tableModel.fireTableDataChanged();
+                            
+                            // 성공 팝업
+                            showCustomAlertPopup("참여 취소 완료", 
+                                item.eventTitle + " "
+                                		+ "\n취소 완료되었습니다.");
+                        });
+                    }
+                }
+            }
+        });
     }
 
 
@@ -969,7 +992,7 @@ public class MyPageFrame extends JFrame {
         y += 50; 
         JButton passwordBtn = createStyledButton("비밀번호 수정", 150, 40);
         passwordBtn.setBounds(20, y, 150, 40);
-        passwordBtn.addActionListener(e -> showCustomAlertPopup("비밀번호 수정", "비밀번호 수정 팝업을 띄웁니다."));
+        passwordBtn.addActionListener(e -> showPasswordChangePopup()); // [수정] 새 팝업 연결
         panel.add(passwordBtn);
 
 
@@ -1028,6 +1051,85 @@ public class MyPageFrame extends JFrame {
         for (int i = 0; i < table.getColumnModel().getColumnCount(); i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(leftRenderer);
         }
+    }
+
+    // [추가] 비밀번호 수정 팝업 구현
+    private void showPasswordChangePopup() {
+        JDialog dialog = new JDialog(this, "비밀번호 수정", true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0, 0, 0, 0));
+        dialog.setSize(500, 400); // 더 넓고 긴 팝업
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = createPopupPanel();
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        int y = 30;
+
+        // 팝업 타이틀
+        JLabel title = new JLabel("비밀번호 수정", SwingConstants.CENTER);
+        title.setFont(uiFont.deriveFont(Font.BOLD, 20f));
+        title.setForeground(BROWN);
+        title.setBounds(10, y, 480, 30);
+        panel.add(title);
+        y += 50;
+
+        // 필드 셋업
+        JPasswordField currentPwdField = createPasswordField(panel, "현재 비밀번호:", y);
+        y += 60;
+        JPasswordField newPwdField = createPasswordField(panel, "수정할 비밀번호:", y);
+        y += 60;
+        JPasswordField confirmPwdField = createPasswordField(panel, "비밀번호 확인:", y);
+        y += 80;
+
+        // 저장 버튼
+        JButton saveBtn = createPopupBtn("비밀번호 변경");
+        saveBtn.setBounds(100, y, 150, 45);
+        saveBtn.addActionListener(e -> {
+            String current = new String(currentPwdField.getPassword());
+            String newPwd = new String(newPwdField.getPassword());
+            String confirmPwd = new String(confirmPwdField.getPassword());
+
+            if (!current.equals(userPassword)) { // 더미 비밀번호 확인
+                showCustomAlertPopup("오류", "현재 비밀번호가 일치하지 않습니다.");
+            } else if (newPwd.isEmpty() || confirmPwd.isEmpty()) {
+                showCustomAlertPopup("오류", "새 비밀번호를 모두 입력해주세요.");
+            } else if (!newPwd.equals(confirmPwd)) {
+                showCustomAlertPopup("오류", "새 비밀번호와 확인이 일치하지 않습니다.");
+            } else if (newPwd.length() < 6) {
+                 showCustomAlertPopup("오류", "비밀번호는 6자 이상이어야 합니다.");
+            } else {
+                // 비밀번호 변경 성공 처리 (더미 데이터 업데이트)
+                // userPassword = newPwd; 
+                dialog.dispose();
+                showCustomAlertPopup("변경 완료", "비밀번호가 성공적으로 변경되었습니다.");
+            }
+        });
+        panel.add(saveBtn);
+        
+        // 취소 버튼
+        JButton cancelBtn = createPopupBtn("취소");
+        cancelBtn.setBounds(260, y, 120, 45);
+        cancelBtn.addActionListener(e -> dialog.dispose());
+        panel.add(cancelBtn);
+
+        dialog.setVisible(true);
+    }
+    
+    // 비밀번호 필드 생성 헬퍼
+    private JPasswordField createPasswordField(JPanel panel, String labelText, int y) {
+        JLabel label = new JLabel(labelText, SwingConstants.LEFT);
+        label.setFont(uiFont.deriveFont(16f));
+        label.setForeground(BROWN);
+        label.setBounds(50, y, 150, 30);
+        panel.add(label);
+
+        JPasswordField field = new JPasswordField(15);
+        field.setFont(uiFont.deriveFont(16f));
+        field.setBounds(200, y, 200, 30);
+        panel.add(field);
+        return field;
     }
 
 
@@ -1108,17 +1210,17 @@ public class MyPageFrame extends JFrame {
         panel.setLayout(null);
         dialog.add(panel);
         
-        // [수정] 폰트 적용 및 HTML/높이 수정: 팝업 메시지 폰트 적용 (CommunityDetailFrame.java의 createTextLink 참고)
-        String htmlMessage = "<html><body style='text-align:center; padding: 10px;'>" +
-                             "<font face='" + FONT_NAME_HTML + "'>" + 
-                             message + 
-                             "</font></body></html>";
-                             
-        JLabel msgLabel = new JLabel(htmlMessage, SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(18f)); // Fallback size for better layout calculation
-        msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 50, 360, 90); // Y 위치와 높이 확대 (클리핑 방지)
-        panel.add(msgLabel);
+        // [수정] JTextArea 사용: 폰트 적용 및 클리핑 해결
+        JTextArea msgArea = new JTextArea(message);
+        msgArea.setFont(uiFont.deriveFont(18f));
+        msgArea.setForeground(BROWN);
+        msgArea.setOpaque(false);
+        msgArea.setEditable(false);
+        msgArea.setHighlighter(null);
+        msgArea.setLineWrap(true);
+        msgArea.setWrapStyleWord(true);
+        msgArea.setBounds(30, 60, 340, 80); // Y=60, H=80으로 설정
+        panel.add(msgArea);
 
         JButton yesBtn = createPopupBtn("확인"); 
         yesBtn.setBounds(60, 220, 120, 45); 
@@ -1299,11 +1401,16 @@ public class MyPageFrame extends JFrame {
         panel.setLayout(null);
         dialog.add(panel);
 
-        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(16f));
-        msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 50, 360, 90); 
-        panel.add(msgLabel);
+        JTextArea msgArea = new JTextArea(message);
+        msgArea.setFont(uiFont.deriveFont(18f));
+        msgArea.setForeground(BROWN);
+        msgArea.setOpaque(false);
+        msgArea.setEditable(false);
+        msgArea.setHighlighter(null);
+        msgArea.setLineWrap(true);
+        msgArea.setWrapStyleWord(true);
+        msgArea.setBounds(30, 60, 340, 80);
+        panel.add(msgArea);
 
         JButton okBtn = createPopupBtn("확인");
         okBtn.setBounds(135, 220, 130, 45); 
@@ -1324,11 +1431,16 @@ public class MyPageFrame extends JFrame {
         panel.setLayout(null);
         dialog.add(panel);
 
-        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(16f));
-        msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 50, 360, 90); 
-        panel.add(msgLabel);
+        JTextArea msgArea = new JTextArea(message);
+        msgArea.setFont(uiFont.deriveFont(18f));
+        msgArea.setForeground(BROWN);
+        msgArea.setOpaque(false);
+        msgArea.setEditable(false);
+        msgArea.setHighlighter(null);
+        msgArea.setLineWrap(true);
+        msgArea.setWrapStyleWord(true);
+        msgArea.setBounds(30, 60, 340, 80);
+        panel.add(msgArea);
 
         JButton okBtn = createPopupBtn("확인");
         okBtn.setBounds(135, 220, 130, 45); 
