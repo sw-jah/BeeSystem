@@ -58,22 +58,22 @@ public class MainFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        JLabel jarIcon = new JLabel("🍯");
-        jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
-        jarIcon.setBounds(310, 25, 40, 40);
-        headerPanel.add(jarIcon);
+        // [수정] 꿀단지 이모지 -> honey.png 이미지로 변경
+        ImageIcon honeyIcon = new ImageIcon("resource/img/honey.png");
+        Image honeyImg = honeyIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+        JLabel iconLabel = new JLabel(new ImageIcon(honeyImg));
+        iconLabel.setBounds(310, 20, 40, 40); // 타이틀 옆 배치
+        headerPanel.add(iconLabel);
 
-        // [수정] 사용자 정보 & 로그아웃 분리
+        // [수정] 사용자 정보 & 로그아웃 (DB 연동, 보유 꿀 제거)
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
         User user = UserManager.getCurrentUser();
-        String infoText = (user != null) 
-                ? "[" + user.getName() + "]님 | 보유 꿀: " + user.getPoints() + " | "
-                : "로그인이 필요합니다 | ";
+        String userName = (user != null) ? user.getName() : "사용자";
         
-        JLabel userInfo = new JLabel(infoText);
+        JLabel userInfo = new JLabel("[" + userName + "]님 | ");
         userInfo.setFont(uiFont.deriveFont(14f));
         userInfo.setForeground(BROWN);
         userInfoPanel.add(userInfo);
@@ -98,7 +98,6 @@ public class MainFrame extends JFrame {
 
         String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (String menu : menus) {
-            // 현재 페이지는 active=true (null은 메인이 홈이라서 예외 처리)
             JButton menuBtn = createNavButton(menu, false); 
             navPanel.add(menuBtn);
         }
@@ -162,7 +161,6 @@ public class MainFrame extends JFrame {
     }
 
     private void refreshData() {
-        // 일정 데이터 로직 (기존 유지)
         String todayDate = "12월 5일";
         
         List<ScheduleItem> allSchedules = new ArrayList<>();
@@ -222,7 +220,7 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // [중요] 네비게이션 버튼 생성 (모든 프레임 공통)
+    // [수정] 네비게이션 버튼 (모든 프레임 간 자유 이동)
     private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -237,13 +235,14 @@ public class MainFrame extends JFrame {
                 public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
+                    // 각 버튼 클릭 시 해당 프레임 생성 후 현재 창 닫기
                     if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); }
                     else if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
                     else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
                     else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
                     else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); }
                     else if (text.equals("빈 강의실")) { new EmptyClassFrame(); dispose(); }
-                    else if (text.equals("메인으로") || text.equals("서울여대 꿀단지")) { new MainFrame(); dispose(); } // 로고 클릭 등
+                    else if (text.equals("서울여대 꿀단지")) { new MainFrame(); dispose(); } // 로고 클릭 시
                     else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
                 }
             });
@@ -271,89 +270,16 @@ public class MainFrame extends JFrame {
     }
 
     private void showSimplePopup(String title, String message) {
-        JDialog dialog = new JDialog(this, title, true);
-        dialog.setUndecorated(true);
-        dialog.setBackground(new Color(0,0,0,0));
-        dialog.setSize(400, 250);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = createPopupPanel();
-        panel.setLayout(null);
-        dialog.add(panel);
-
-        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(16f));
-        msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 80, 360, 30);
-        panel.add(msgLabel);
-
-        JButton okBtn = createPopupBtn("확인");
-        okBtn.setBounds(135, 160, 130, 45);
-        okBtn.addActionListener(e -> dialog.dispose());
-        panel.add(okBtn);
-
-        dialog.setVisible(true);
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void showLogoutPopup() {
-        JDialog dialog = new JDialog(this, "로그아웃", true);
-        dialog.setUndecorated(true);
-        dialog.setBackground(new Color(0,0,0,0));
-        dialog.setSize(400, 250);
-        dialog.setLocationRelativeTo(this);
-        
-        JPanel panel = createPopupPanel();
-        panel.setLayout(null);
-        dialog.add(panel);
-
-        JLabel msgLabel = new JLabel("로그아웃 하시겠습니까?", SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(18f));
-        msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 70, 360, 30);
-        panel.add(msgLabel);
-
-        JButton yesBtn = createPopupBtn("네");
-        yesBtn.setBounds(60, 150, 120, 45);
-        yesBtn.addActionListener(e -> {
-            dialog.dispose();
+        int ans = JOptionPane.showConfirmDialog(this, "로그아웃 하시겠습니까?", "로그아웃", JOptionPane.YES_NO_OPTION);
+        if (ans == JOptionPane.YES_OPTION) {
             UserManager.logout();
             new LoginFrame(); 
             dispose();
-        });
-        panel.add(yesBtn);
-
-        JButton noBtn = createPopupBtn("아니오");
-        noBtn.setBounds(220, 150, 120, 45);
-        noBtn.addActionListener(e -> dialog.dispose());
-        panel.add(noBtn);
-
-        dialog.setVisible(true);
-    }
-
-    private JPanel createPopupPanel() {
-        return new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(POPUP_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
-                g2.setColor(BROWN);
-                g2.setStroke(new BasicStroke(3));
-                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
-            }
-        };
-    }
-
-    private JButton createPopupBtn(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(uiFont.deriveFont(16f));
-        btn.setBackground(BROWN);
-        btn.setForeground(Color.WHITE);
-        btn.setFocusPainted(false);
-        btn.setBorder(new RoundedBorder(15, BROWN, 1));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return btn;
+        }
     }
 
     private static class RoundedBorder implements Border {
