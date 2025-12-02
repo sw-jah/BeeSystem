@@ -5,7 +5,7 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.io.InputStream;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalDateTime; // 시간 계산을 위해 필요
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -40,10 +40,16 @@ public class AdminSpaceManageFrame extends JFrame {
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        // 테스트 데이터 (사용자 화면의 학번과 일치하는 데이터 포함)
+        // --- 테스트 데이터 초기화 ---
+        
+        // 1. 미래 예약 (내일) -> 아직 시간 안 됨 (취소 불가)
         reserveList.add(new SpaceData("스터디룸 A", "20231234", "김슈니", LocalDate.now().plusDays(1), LocalTime.of(14, 0), LocalTime.of(16, 0), 4, "예약중"));
+        
+        // 2. 이미 지난 예약 (20분 전 시작) -> 10분 지남 (취소 가능)
         reserveList.add(new SpaceData("세미나실 B", "20210001", "이멋사", LocalDate.now(), LocalTime.now().minusMinutes(20), LocalTime.now().plusHours(1), 6, "예약중"));
-        reserveList.add(new SpaceData("세미나실 B", "20210001", "이멋사", LocalDate.now().minusDays(1), LocalTime.of(10,0), LocalTime.of(12,0), 6, "예약중"));
+        
+        // [추가된 예시] 3. 방금 시작한 예약 (5분 전 시작) -> 10분 안 지남 (취소 시도 시 거부되어야 함)
+        reserveList.add(new SpaceData("세미나실 C", "20240099", "이빠름", LocalDate.now(), LocalTime.now().minusMinutes(5), LocalTime.now().plusHours(2), 4, "예약중"));
 
         initUI();
         refreshList();
@@ -133,7 +139,7 @@ public class AdminSpaceManageFrame extends JFrame {
         panel.add(userLabel);
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy.MM.dd");
-        String timeStr = data.date.format(dtf) + "  " + data.startTime + " ~ " + data.endTime;
+        String timeStr = data.date.format(dtf) + "  " + data.startTime.format(DateTimeFormatter.ofPattern("HH:mm")) + " ~ " + data.endTime.format(DateTimeFormatter.ofPattern("HH:mm"));
         JLabel timeLabel = new JLabel(timeStr);
         timeLabel.setFont(uiFont.deriveFont(16f));
         timeLabel.setForeground(BROWN);
@@ -153,20 +159,31 @@ public class AdminSpaceManageFrame extends JFrame {
             cancelBtn.setForeground(Color.WHITE);
             cancelBtn.setBorder(new RoundedBorder(10, RED_CANCEL));
             
-            // [핵심] 미입실 취소 및 패널티 부여 로직
+            // [핵심 로직 수정] 시간 체크 후 미입실 취소
             cancelBtn.addActionListener(e -> {
+                // 1. 현재 시간과 입장 가능 시간 계산
+                LocalDateTime now = LocalDateTime.now(); // 현재 시간
+                LocalDateTime reserveStart = LocalDateTime.of(data.date, data.startTime); // 예약 시작 시간
+                LocalDateTime cancelAllowedTime = reserveStart.plusMinutes(10); // 시작 후 10분
+
+                // 2. 시간이 10분 지났는지 확인
+                if (now.isBefore(cancelAllowedTime)) {
+                    // 아직 10분이 안 지났으면 경고창 띄우고 중단
+                    String msg = "아직 미입실 처리를 할 수 없습니다.\n" +
+                                 "입장 시간 10분 후 (" + cancelAllowedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + ") 부터 취소 가능합니다.";
+                    JOptionPane.showMessageDialog(this, msg, "취소 불가", JOptionPane.WARNING_MESSAGE);
+                    return; 
+                }
+
+                // 3. 10분이 지났다면 정상적으로 취소 진행
                 int result = JOptionPane.showConfirmDialog(this, 
                     "[" + data.userName + "]님 미입실로 '예약 취소' 처리하시겠습니까?\n(누적 시 패널티 부여)", 
                     "패널티 부여 확인", JOptionPane.YES_NO_OPTION);
                 
                 if (result == JOptionPane.YES_OPTION) {
-                    // 1. 상태 변경
                     data.status = "취소됨";
-                    
-                    // 2. 패널티 부여
                     PenaltyManager.addWarning(data.userId);
                     
-                    // 3. 정지 여부 확인 알림
                     if(PenaltyManager.isBanned(data.userId)) {
                         JOptionPane.showMessageDialog(this, 
                             "🚫 경고 2회 누적!\n해당 회원은 7일간 예약이 정지되었습니다.");
