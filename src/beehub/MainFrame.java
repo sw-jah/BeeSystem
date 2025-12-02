@@ -58,12 +58,7 @@ public class MainFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        // [수정] 꿀단지 이모지 -> honey.png 이미지로 변경
-        ImageIcon honeyIcon = new ImageIcon("resource/img/honey.png");
-        Image honeyImg = honeyIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-        JLabel iconLabel = new JLabel(new ImageIcon(honeyImg));
-        iconLabel.setBounds(310, 20, 40, 40); // 타이틀 옆 배치
-        headerPanel.add(iconLabel);
+        
 
         // [수정] 사용자 정보 & 로그아웃 (DB 연동, 보유 꿀 제거)
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));

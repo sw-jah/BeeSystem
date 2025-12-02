@@ -106,13 +106,6 @@ public class SpaceRentFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        // [수정] 이모지 대신 이미지 아이콘 사용
-        ImageIcon honeyIcon = new ImageIcon("resource/img/honey.png");
-        Image honeyImg = honeyIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-        JLabel iconLabel = new JLabel(new ImageIcon(honeyImg));
-        iconLabel.setBounds(310, 20, 40, 40);
-        headerPanel.add(iconLabel);
-
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(450, 0, 380, 80);
         userInfoPanel.setOpaque(false);

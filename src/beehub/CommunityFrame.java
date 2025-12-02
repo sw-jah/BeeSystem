@@ -138,7 +138,7 @@ public class CommunityFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        JLabel jarIcon = new JLabel("🍯");
+        JLabel jarIcon = new JLabel("");
         jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
@@ -650,11 +650,11 @@ public class CommunityFrame extends JFrame {
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("커뮤니티")) return;
-                    if (text.equals("빈 강의실")) { /* new EmptyClassFrame(); dispose(); */ }
-                    else if (text.equals("공간대여")) { /* new SpaceRentFrame(); dispose(); */ }
-                    else if (text.equals("물품대여")) { /* new ItemListFrame(); dispose(); */ }
-                    else if (text.equals("간식행사") || text.equals("과행사")) { /* new EventListFrame(); dispose(); */ }
-                    else if (text.equals("마이페이지")) { /* new MainFrame(); dispose(); */ }
+                    if (text.equals("빈 강의실")) { new EmptyClassFrame(); dispose(); }
+                    else if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
+                    else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
+                    else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
+                    else if (text.equals("마이페이지")) {  new MyPageFrame(); dispose();  }
                     else JOptionPane.showMessageDialog(null, "준비중입니다.");
                 }
             });

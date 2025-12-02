@@ -69,7 +69,7 @@ public class ItemListFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        JLabel jarIcon = new JLabel("🍯");
+        JLabel jarIcon = new JLabel("");
         jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
@@ -99,7 +99,7 @@ public class ItemListFrame extends JFrame {
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
         add(navPanel);
 
-        String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (int i = 0; i < menus.length; i++) {
             JButton menuBtn = createNavButton(menus[i], i == 0);
             navPanel.add(menuBtn);
@@ -289,12 +289,16 @@ public class ItemListFrame extends JFrame {
                     if (text.equals("물품대여")) return;
                     
                     // [수정] 간식행사와 과행사 모두 처리
-                    if (text.equals("간식행사") || text.equals("과행사")) {
+                    if (text.equals("과행사")) {
                         new EventListFrame(); dispose();
                     } else if (text.equals("공간대여")) {
                         new SpaceRentFrame(); dispose();
                     } else if (text.equals("마이페이지")) {
-                        new MainFrame(); dispose();
+                        new MyPageFrame(); dispose();
+                    } else if (text.equals("빈 강의실")) {
+                        new EmptyClassFrame(); dispose();
+                    } else if (text.equals("커뮤니티")) {
+                        new CommunityFrame(); dispose();
                     } else {
                         showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                     }

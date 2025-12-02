@@ -233,7 +233,7 @@ public class MyPageFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        JLabel jarIcon = new JLabel("🍯");
+        JLabel jarIcon = new JLabel("");
         jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
@@ -1383,12 +1383,18 @@ public class MyPageFrame extends JFrame {
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("마이페이지")) return; 
                     
-                    if (text.equals("공간대여")) { dispose(); } 
-                    else if (text.equals("과행사")) { dispose(); } 
-                    else if (text.equals("물품대여")) { dispose(); } 
-                    else if (text.equals("커뮤니티")) { dispose(); } 
-                    else if (text.equals("빈 강의실")) { dispose(); } 
-                    else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
+                    if (text.equals("과행사")) {
+                        new EventListFrame(); dispose();
+                    } else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
+                    else if (text.equals("공간대여")) {
+                        new SpaceRentFrame(); dispose();
+                    } else if (text.equals("빈 강의실")) {
+                        new EmptyClassFrame(); dispose();
+                    } else if (text.equals("커뮤니티")) {
+                        new CommunityFrame(); dispose();
+                    } else {
+                        showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
+                    }
                 }
             });
         }

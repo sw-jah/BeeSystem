@@ -77,7 +77,7 @@ public class EmptyClassFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
         
-        JLabel jarIcon = new JLabel("🍯");
+        JLabel jarIcon = new JLabel("");
         jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
@@ -306,7 +306,7 @@ public class EmptyClassFrame extends JFrame {
                     else if (text.equals("과행사")) { new EventListFrame(); dispose(); } 
                     else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); } 
                     else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); } 
-                    else if (text.equals("마이페이지")) { new MainFrame(); dispose(); } 
+                    else if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); } 
                     else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
                 }
             });

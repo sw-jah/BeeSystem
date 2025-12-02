@@ -358,10 +358,12 @@ public class ItemDetailFrame extends JFrame {
                         new ItemListFrame(); dispose();
                     } else if (text.equals("과행사")) {
                         new EventListFrame(); dispose();
+                    } else if (text.equals("빈 강의실")) {
+                        new EmptyClassFrame(); dispose();
                     } else if (text.equals("공간대여")) {
                         new SpaceRentFrame(); dispose();
                     } else if (text.equals("마이페이지")) {
-                        new MainFrame(); dispose();
+                        new MyPageFrame(); dispose();
                     } else {
                         showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                     }
