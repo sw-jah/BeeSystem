@@ -15,6 +15,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
 
+// [중요] 관리자 패널티 매니저 임포트 (src/admin/PenaltyManager.java가 있어야 함)
+import admin.PenaltyManager;
+
 public class SpaceRentFrame extends JFrame {
 
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
@@ -45,7 +48,6 @@ public class SpaceRentFrame extends JFrame {
         }
     }
 
-    // [수정] 사용자 변수
     private String userName = "사용자";
     private int userPoint = 100;
 
@@ -72,6 +74,9 @@ public class SpaceRentFrame extends JFrame {
     private ArrayList<JTextField> partnerFields = new ArrayList<>();
     private ArrayList<JToggleButton> timeButtons = new ArrayList<>();
     private int selectedTimeCount = 0;
+    
+    // [수정] 학번 입력 필드를 멤버 변수로 변경 (예약 시 확인용)
+    private JTextField myIdField;
 
     public SpaceRentFrame() {
         setTitle("서울여대 꿀단지 - 공간대여");
@@ -111,7 +116,6 @@ public class SpaceRentFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
-        // [수정] 프로필 아이콘 제거
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(450, 0, 380, 80);
         userInfoPanel.setOpaque(false);
@@ -121,7 +125,6 @@ public class SpaceRentFrame extends JFrame {
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // [수정] 로그아웃 팝업 연결
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 showLogoutPopup();
@@ -237,7 +240,9 @@ public class SpaceRentFrame extends JFrame {
         rightPanel.add(infoPanel);
 
         addLabel(rightPanel, "신청자 학번 (본인)", 105);
-        JTextField myIdField = new JTextField("20231234");
+        
+        // [수정] 학번 필드 멤버 변수로 사용
+        myIdField = new JTextField("20231234");
         myIdField.setFont(uiFont.deriveFont(16f));
         myIdField.setBorder(BorderFactory.createCompoundBorder(
             new RoundedBorder(10, BORDER_COLOR, 1), BorderFactory.createEmptyBorder(5, 10, 5, 10)));
@@ -445,6 +450,17 @@ public class SpaceRentFrame extends JFrame {
     }
 
     private void handleRentAction() {
+        // 🚨 [핵심] 예약 버튼 클릭 시 제일 먼저 정지 여부 확인
+        String applicantId = myIdField.getText().trim();
+        
+        if (PenaltyManager.isBanned(applicantId)) {
+            LocalDate banDate = PenaltyManager.getBanDate(applicantId);
+            showSimplePopup("예약 불가", 
+                "🚫 미입실 누적(2회)으로 인해 예약이 정지되었습니다.\n" +
+                "해제일: " + banDate + " 이후");
+            return;
+        }
+
         int selectedIndex = spaceCombo.getSelectedIndex();
         String space = (String) spaceCombo.getSelectedItem();
         

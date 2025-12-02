@@ -4,16 +4,17 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.font.TextLayout;
 import java.io.InputStream;
-import java.net.URL;
+
+// [중요] 다른 패키지의 프레임 임포트
+import admin.AdminMainFrame;
+import council.CouncilMainFrame;
 
 public class LoginFrame extends JFrame {
 
     // ===============================
-    // 🎨 컬러 테마 (수정됨 ⭐)
+    // 🎨 컬러 테마
     // ===============================
-    // [변경] 더 화사한 연노랑색 (Lemon Chiffon)
     private static final Color BG_YELLOW = new Color(255, 250, 205); 
     private static final Color BROWN = new Color(139, 90, 43);
     private static final Color INPUT_BG = new Color(255, 255, 255);
@@ -43,8 +44,14 @@ public class LoginFrame extends JFrame {
     // ===============================
     private CardLayout cardLayout;
     private JPanel containerPanel;
+    
+    // 사용자용 필드
     private JTextField hakbunField;
     private JPasswordField pwField;
+    
+    // 관리자용 필드 (엔터키 처리를 위해 멤버 변수로 변경)
+    private JTextField adminIdField;
+    private JPasswordField adminPwField;
 
     public LoginFrame() {
         setTitle("서울여대 꿀단지");
@@ -65,27 +72,22 @@ public class LoginFrame extends JFrame {
     }
 
     // ===============================================================
-    // 1️⃣ 로그인 화면 (이미지 경로: resource/img/...)
+    // 1️⃣ 일반 로그인 화면
     // ===============================================================
     private JPanel createLoginPanel() {
         JPanel panel = createBackgroundPanel();
         panel.setLayout(null);
 
-        // 벌 아이콘 이미지 넣기
+        // 벌 아이콘
         JLabel beeIcon = new JLabel();
-        
-        // src 밖에 있는 폴더 경로
         String imgPath = "resource/img/login-bee.png"; 
         ImageIcon originalIcon = new ImageIcon(imgPath);
 
         if (originalIcon.getIconWidth() > 0) {
-            // 이미지 크기 조절 (100x100)
             Image img = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
             beeIcon.setIcon(new ImageIcon(img));
             beeIcon.setBounds(380, 20, 100, 100); 
         } else {
-            // 로드 실패 시
-            System.out.println("❌ 이미지 로드 실패: " + imgPath);
             beeIcon.setText("🐝");
             beeIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 60));
             beeIcon.setBounds(400, 30, 80, 80);
@@ -110,6 +112,8 @@ public class LoginFrame extends JFrame {
 
         hakbunField = createStyledTextField();
         hakbunField.setBounds(80, 265, 340, 50);
+        // [추가] 엔터키 리스너
+        hakbunField.addActionListener(e -> handleUserLogin());
         panel.add(hakbunField);
 
         JLabel pwLabel = new JLabel("비밀번호 :");
@@ -120,6 +124,8 @@ public class LoginFrame extends JFrame {
 
         pwField = createStyledPasswordField();
         pwField.setBounds(80, 375, 340, 50);
+        // [추가] 엔터키 리스너
+        pwField.addActionListener(e -> handleUserLogin());
         panel.add(pwField);
 
         JButton findPwBtn = createTextButton("비밀번호 찾기");
@@ -129,7 +135,7 @@ public class LoginFrame extends JFrame {
 
         JButton loginBtn = createStyledButton("로그인");
         loginBtn.setBounds(100, 500, 300, 60);
-        loginBtn.addActionListener(e -> handleLogin());
+        loginBtn.addActionListener(e -> handleUserLogin());
         panel.add(loginBtn);
 
         JButton adminBtn = createSmallButton("관리자 로그인");
@@ -168,7 +174,7 @@ public class LoginFrame extends JFrame {
         JButton confirmBtn = createStyledButton("확인");
         confirmBtn.setBounds(240, 420, 160, 55);
         confirmBtn.addActionListener(e -> 
-            showCustomDialog("[이름]님의 비밀번호 :\nabcd1234 입니다.", true)
+            showCustomDialog("임시 비밀번호가 발송되었습니다.", true)
         );
         panel.add(confirmBtn);
 
@@ -182,7 +188,6 @@ public class LoginFrame extends JFrame {
         JPanel panel = createBackgroundPanel();
         panel.setLayout(null);
 
-        // 관리자 화면 이미지 (같은 경로 사용)
         JLabel beeIcon = new JLabel();
         String imgPath = "resource/img/login-bee.png"; 
         ImageIcon originalIcon = new ImageIcon(imgPath);
@@ -220,9 +225,11 @@ public class LoginFrame extends JFrame {
         idLabel.setBounds(80, 220, 150, 30);
         panel.add(idLabel);
 
-        JTextField adminId = createStyledTextField();
-        adminId.setBounds(80, 255, 340, 50);
-        panel.add(adminId);
+        adminIdField = createStyledTextField();
+        adminIdField.setBounds(80, 255, 340, 50);
+        // [추가] 엔터키 리스너
+        adminIdField.addActionListener(e -> handleAdminLogin());
+        panel.add(adminIdField);
 
         JLabel pwLabel = new JLabel("비밀번호");
         pwLabel.setFont(uiFont.deriveFont(18f));
@@ -230,13 +237,15 @@ public class LoginFrame extends JFrame {
         pwLabel.setBounds(80, 330, 150, 30);
         panel.add(pwLabel);
 
-        JPasswordField adminPw = createStyledPasswordField();
-        adminPw.setBounds(80, 365, 340, 50);
-        panel.add(adminPw);
+        adminPwField = createStyledPasswordField();
+        adminPwField.setBounds(80, 365, 340, 50);
+        // [추가] 엔터키 리스너
+        adminPwField.addActionListener(e -> handleAdminLogin());
+        panel.add(adminPwField);
 
         JButton loginBtn = createStyledButton("로그인");
         loginBtn.setBounds(100, 460, 300, 60);
-        loginBtn.addActionListener(e -> showCustomDialog("관리자님 환영합니다!", false));
+        loginBtn.addActionListener(e -> handleAdminLogin());
         panel.add(loginBtn);
         
         JButton backBtn = createSmallButton("뒤로가기");
@@ -245,6 +254,60 @@ public class LoginFrame extends JFrame {
         panel.add(backBtn);
 
         return panel;
+    }
+
+    // ===============================================================
+    // 💾 일반 사용자 로그인 처리
+    // ===============================================================
+    private void handleUserLogin() {
+        String id = hakbunField.getText().trim();
+        String pw = new String(pwField.getPassword()).trim();
+
+        if (id.isEmpty() || pw.isEmpty()) {
+            showCustomDialog("아이디와 비밀번호를\n모두 입력해주세요.", false);
+            return;
+        }
+
+        UserDAO dao = new UserDAO();
+        if (dao.checkUserLogin(id, pw)) {
+            showCustomDialog(id + "님 환영합니다!", false);
+            new MainFrame(); // 일반 사용자 메인으로
+            dispose();
+        } else {
+            showCustomDialog("로그인 실패\n아이디 또는 비밀번호를 확인하세요.", false);
+        }
+    }
+
+    private void handleAdminLogin() {
+        String id = adminIdField.getText().trim();
+        String pw = new String(adminPwField.getPassword()).trim();
+        
+        if(id.isEmpty() || pw.isEmpty()) {
+            showCustomDialog("관리자 정보를 입력해주세요.", false);
+            return;
+        }
+
+        UserDAO dao = new UserDAO();
+        
+        // 1. 총 관리자 체크
+        if (dao.checkAdminLogin(id, pw)) {
+            showCustomDialog("총 관리자님 환영합니다!", false);
+            new admin.AdminMainFrame(); 
+            dispose();
+            return;
+        } 
+        
+        // 2. 학생회 체크 (정보 받아오기)
+        UserDAO.CouncilInfo council = dao.getCouncilInfo(id, pw);
+        if (council != null) {
+            showCustomDialog(council.name + "님 환영합니다!", false);
+            // [중요] 로그인한 학생회 정보를 전달
+            new council.CouncilMainFrame(council.id, council.name); 
+            dispose();
+            return;
+        }
+
+        showCustomDialog("로그인 실패\n정보를 확인해주세요.", false);
     }
 
     // ===============================================================
@@ -335,7 +398,6 @@ public class LoginFrame extends JFrame {
                 g2d.setColor(BG_YELLOW);
                 g2d.fillRect(0, 0, getWidth(), getHeight());
                 
-                // 벌집 무늬 그리기 (연한 노랑)
                 g2d.setColor(new Color(255, 235, 59, 50));
                 g2d.setStroke(new BasicStroke(3));
                 int size = 70;
@@ -425,10 +487,6 @@ public class LoginFrame extends JFrame {
             g2.setColor(color);
             g2.drawRoundRect(x, y, w - 1, h - 1, radius, radius);
         }
-    }
-
-    private void handleLogin() {
-        showCustomDialog("로그인 시도!\n(아직 DB연결 전입니다)", false);
     }
 
     public static void main(String[] args) {

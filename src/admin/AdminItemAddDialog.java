@@ -1,8 +1,9 @@
-package admin; // [수정] 패키지 변경
+package admin;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
+import java.io.File; 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,6 @@ public class AdminItemAddDialog extends JDialog {
 
     private static final Color BG_YELLOW = new Color(255, 250, 205);
     private static final Color BROWN = new Color(139, 90, 43);
-    // [수정] GRAY 색상 정의 추가
     private static final Color GRAY = new Color(200, 200, 200);
     
     private static Font uiFont;
@@ -25,6 +25,9 @@ public class AdminItemAddDialog extends JDialog {
 
     private AdminItemManageFrame parent;
     private AdminItemManageFrame.ItemData currentItem; 
+    
+    // 선택된 이미지 경로를 저장할 변수
+    private String selectedImagePath = null;
 
     private JTextField nameField;
     private JSpinner stockSpinner, daySpinner;
@@ -66,10 +69,21 @@ public class AdminItemAddDialog extends JDialog {
         uploadBtn.setBounds(140, 100, 100, 30);
         uploadBtn.setBackground(Color.WHITE);
         uploadBtn.setForeground(BROWN);
+        
         uploadBtn.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
             if(chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                imagePreview.setText(chooser.getSelectedFile().getName());
+                File file = chooser.getSelectedFile();
+                
+                // 경로 저장
+                selectedImagePath = file.getAbsolutePath();
+                
+                // 미리보기 설정
+                ImageIcon icon = new ImageIcon(selectedImagePath);
+                Image img = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+                
+                imagePreview.setIcon(new ImageIcon(img));
+                imagePreview.setText(""); 
             }
         });
         add(uploadBtn);
@@ -124,7 +138,7 @@ public class AdminItemAddDialog extends JDialog {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane);
 
-        JButton cancelBtn = createBtn("취소", GRAY); // 이제 GRAY 변수를 찾을 수 있습니다.
+        JButton cancelBtn = createBtn("취소", GRAY);
         cancelBtn.setBounds(100, 540, 120, 50);
         cancelBtn.addActionListener(e -> dispose());
         add(cancelBtn);
@@ -173,6 +187,15 @@ public class AdminItemAddDialog extends JDialog {
         nameField.setText(item.name);
         stockSpinner.setValue(item.stock);
         daySpinner.setValue(item.rentDays);
+        
+        // 수정 시 기존 이미지 불러오기
+        if (item.imagePath != null) {
+            selectedImagePath = item.imagePath;
+            ImageIcon icon = new ImageIcon(selectedImagePath);
+            Image img = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            imagePreview.setIcon(new ImageIcon(img));
+            imagePreview.setText("");
+        }
     }
 
     private void saveData() {
@@ -197,12 +220,15 @@ public class AdminItemAddDialog extends JDialog {
         if(majors.isEmpty()) majors = "대상 없음";
 
         if(currentItem == null) {
-            parent.addItem(new AdminItemManageFrame.ItemData(name, stock, days, majors, null));
+            // 등록: selectedImagePath 전달
+            parent.addItem(new AdminItemManageFrame.ItemData(name, stock, days, majors, selectedImagePath));
         } else {
+            // 수정: 값 업데이트
             currentItem.name = name;
             currentItem.stock = stock;
             currentItem.rentDays = days;
             currentItem.targetMajor = majors;
+            currentItem.imagePath = selectedImagePath; // 이미지 경로 업데이트
             parent.refreshList();
         }
         dispose();

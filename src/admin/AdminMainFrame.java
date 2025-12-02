@@ -1,11 +1,11 @@
-package admin; // [수정] 패키지 변경
+package admin;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
-import beehub.LoginFrame; // [수정] LoginFrame import 추가
+import beehub.LoginFrame; // 기존 beehub 패키지의 로그인 화면 연결
 
 public class AdminMainFrame extends JFrame {
 
@@ -16,12 +16,10 @@ public class AdminMainFrame extends JFrame {
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color BROWN = new Color(139, 90, 43);
     
-    // 폰트 설정
     private static Font uiFont;
 
     static {
         try {
-            // 리소스 경로는 src/admin이 아니라 classpath 기준이므로 그대로 둡니다.
             InputStream is = AdminMainFrame.class.getResourceAsStream("/fonts/DNFBitBitv2.ttf");
             if (is == null) uiFont = new Font("맑은 고딕", Font.BOLD, 12);
             else uiFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(12f);
@@ -77,13 +75,25 @@ public class AdminMainFrame extends JFrame {
         menuContainer.setOpaque(false);
         add(menuContainer);
 
-        menuContainer.add(createMenuButton("물품 관리", e -> {
+        menuContainer.add(createMenuButton("📦 물품 관리", e -> {
             new AdminItemManageFrame(); // 물품 관리 화면 열기
             dispose();
         }));
-        menuContainer.add(createMenuButton("대여 관리", e -> showMsg("준비 중입니다.")));
-        menuContainer.add(createMenuButton("장소 대여", e -> showMsg("준비 중입니다.")));
-        menuContainer.add(createMenuButton("경품 추첨", e -> showMsg("준비 중입니다.")));
+     // [수정] 대여 관리 버튼 연결
+        menuContainer.add(createMenuButton("📑 대여 관리", e -> {
+            new AdminRentManageFrame(); // 대여 관리 화면 열기
+            dispose();
+        }));
+     // [수정] 장소 대여 버튼 연결
+        menuContainer.add(createMenuButton("🏢 장소 대여", e -> {
+            new AdminSpaceManageFrame(); // 장소 관리 화면 열기
+            dispose();
+        }));
+     // [수정] 경품 추첨 버튼 연결
+        menuContainer.add(createMenuButton("🎁 경품 추첨", e -> {
+            new AdminLotteryFrame(); // 경품 추첨 화면 열기
+            dispose();
+        }));
     }
 
     private JButton createMenuButton(String text, ActionListener action) {

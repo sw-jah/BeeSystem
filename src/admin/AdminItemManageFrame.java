@@ -1,4 +1,4 @@
-package admin; // [수정] 패키지 변경
+package admin;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -23,6 +23,7 @@ public class AdminItemManageFrame extends JFrame {
     }
 
     private JPanel itemListPanel;
+    // 물품 데이터 저장 리스트
     private ArrayList<ItemData> itemList = new ArrayList<>();
 
     public AdminItemManageFrame() {
@@ -33,7 +34,7 @@ public class AdminItemManageFrame extends JFrame {
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        // 테스트 데이터
+        // 테스트 데이터 (기존 데이터 예시)
         itemList.add(new ItemData("C타입 충전기", 3, 1, "전체 학과", null));
         itemList.add(new ItemData("노트북", 5, 3, "소프트웨어융합학과", null));
 
@@ -55,7 +56,7 @@ public class AdminItemManageFrame extends JFrame {
         titleLabel.setBounds(30, 20, 200, 40);
         headerPanel.add(titleLabel);
 
-        JButton homeBtn = new JButton("<- 메인으로");
+        JButton homeBtn = new JButton("🏠 메인으로");
         homeBtn.setFont(uiFont.deriveFont(14f));
         homeBtn.setBackground(BROWN);
         homeBtn.setForeground(Color.WHITE);
@@ -114,10 +115,25 @@ public class AdminItemManageFrame extends JFrame {
         panel.setBackground(Color.WHITE);
         panel.setBorder(new RoundedBorder(15, Color.LIGHT_GRAY));
 
-        JLabel imgLabel = new JLabel("📦", SwingConstants.CENTER);
-        imgLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-        imgLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        // 이미지 표시 부분
+        JLabel imgLabel = new JLabel();
         imgLabel.setBounds(15, 15, 70, 70);
+        imgLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        imgLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        if (item.imagePath != null) {
+            try {
+                ImageIcon icon = new ImageIcon(item.imagePath);
+                Image img = icon.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH);
+                imgLabel.setIcon(new ImageIcon(img));
+            } catch (Exception e) {
+                imgLabel.setText("📦");
+                imgLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+            }
+        } else {
+            imgLabel.setText("📦");
+            imgLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        }
         panel.add(imgLabel);
 
         JLabel nameLabel = new JLabel(item.name);
@@ -169,12 +185,13 @@ public class AdminItemManageFrame extends JFrame {
         refreshList();
     }
     
+    // 데이터 클래스
     public static class ItemData {
         String name;
         int stock;
         int rentDays;
         String targetMajor;
-        String imagePath;
+        String imagePath; // 이미지 경로
 
         public ItemData(String n, int s, int r, String t, String i) {
             name = n; stock = s; rentDays = r; targetMajor = t; imagePath = i;
