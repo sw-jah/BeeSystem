@@ -91,7 +91,7 @@ public class MainFrame extends JFrame {
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
         add(navPanel);
 
-        String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (String menu : menus) {
             JButton menuBtn = createNavButton(menu, false); 
             navPanel.add(menuBtn);
