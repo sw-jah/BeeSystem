@@ -76,13 +76,6 @@ public class EventDetailFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        // [수정] 꿀단지 이미지 아이콘 적용
-        ImageIcon honeyIcon = new ImageIcon("resource/img/honey.png");
-        Image honeyImg = honeyIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-        JLabel iconLabel = new JLabel(new ImageIcon(honeyImg));
-        iconLabel.setBounds(310, 20, 40, 40);
-        headerPanel.add(iconLabel);
-
         // [수정] 사용자 정보 & 로그아웃 (DB 연동)
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
