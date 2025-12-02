@@ -30,9 +30,10 @@ public class EventDetailFrame extends JFrame {
     }
 
     private String userName = "사용자";
-    private int userPoint = 100;
+    private String userId = "20230000"; // 기본값
+    private int userPoint = 0;
     
-    // [중요] 사용자 정보 (테스트용)
+    // [중요] 사용자 정보 (테스트용 변수 - 실제로는 DB에서 학과 정보 등을 가져와야 함)
     private String userDept = "소프트웨어융합학과"; 
     private boolean isSchoolFeePaid = true;  // 학교 학생회비 납부 여부
     private boolean isDeptFeePaid = false;   // 과 학생회비 납부 여부 (테스트: 미납)
@@ -48,11 +49,22 @@ public class EventDetailFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
+
+        // [수정] 현재 로그인한 사용자 정보 가져오기
+        User currentUser = UserManager.getCurrentUser();
+        if (currentUser != null) {
+            this.userName = currentUser.getName();
+            this.userId = currentUser.getId();
+            this.userPoint = currentUser.getPoints();
+            // userDept = currentUser.getDept(); // User 클래스에 학과 정보가 있다면 연동
+        }
+
         initUI();
         setVisible(true);
     }
 
     private void initUI() {
+        // --- 헤더 ---
         JPanel headerPanel = new JPanel(null);
         headerPanel.setBounds(0, 0, 800, 80);
         headerPanel.setBackground(HEADER_YELLOW);
@@ -64,37 +76,48 @@ public class EventDetailFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        // 이모지 제거 -> 이미지로 대체 가능 영역
-        JLabel jarIcon = new JLabel(); 
-        jarIcon.setBounds(310, 25, 40, 40);
-        headerPanel.add(jarIcon);
+        // [수정] 꿀단지 이미지 아이콘 적용
+        ImageIcon honeyIcon = new ImageIcon("resource/img/honey.png");
+        Image honeyImg = honeyIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+        JLabel iconLabel = new JLabel(new ImageIcon(honeyImg));
+        iconLabel.setBounds(310, 20, 40, 40);
+        headerPanel.add(iconLabel);
 
+        // [수정] 사용자 정보 & 로그아웃 (DB 연동)
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        JLabel userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
+        JLabel userInfoText = new JLabel("[" + userName + "]님 | ");
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
-        userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        userInfoText.addMouseListener(new MouseAdapter() {
+        userInfoPanel.add(userInfoText);
+
+        JLabel logoutBtn = new JLabel("로그아웃");
+        logoutBtn.setFont(uiFont.deriveFont(14f));
+        logoutBtn.setForeground(BROWN);
+        logoutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        logoutBtn.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) { showLogoutPopup(); }
         });
-        userInfoPanel.add(userInfoText);
+        userInfoPanel.add(logoutBtn);
+        
         headerPanel.add(userInfoPanel);
 
+        // --- 네비게이션 ---
         JPanel navPanel = new JPanel(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
         navPanel.setBackground(NAV_BG);
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
         add(navPanel);
 
-        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
-        for (int i = 0; i < menus.length; i++) {
-            JButton menuBtn = createNavButton(menus[i], i == 1);
+        String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        for (String menu : menus) {
+            JButton menuBtn = createNavButton(menu, menu.equals("간식행사") || menu.equals("과행사"));
             navPanel.add(menuBtn);
         }
 
+        // --- 메인 컨텐츠 ---
         JPanel contentPanel = new JPanel(null);
         contentPanel.setBounds(0, 130, 800, 470);
         contentPanel.setBackground(BG_MAIN);
@@ -106,7 +129,7 @@ public class EventDetailFrame extends JFrame {
         backButton.setBackground(GRAY_BTN);
         backButton.setBounds(680, 20, 90, 30);
         backButton.setFocusPainted(false);
-        backButton.setBorder(new RoundedBorder(10));
+        backButton.setBorder(new RoundedBorder(10, GRAY_BTN, 1));
         backButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         backButton.addActionListener(e -> {
             new EventListFrame();
@@ -164,7 +187,7 @@ public class EventDetailFrame extends JFrame {
             applyButton.setBackground(BROWN);
             applyButton.setBounds(570, 360, 180, 50);
             applyButton.setFocusPainted(false);
-            applyButton.setBorder(new RoundedBorder(15));
+            applyButton.setBorder(new RoundedBorder(15, BROWN, 1));
             applyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             
             applyButton.addActionListener(e -> {
@@ -226,17 +249,7 @@ public class EventDetailFrame extends JFrame {
         dialog.setUndecorated(true);
         dialog.setBackground(new Color(0,0,0,0));
 
-        JPanel panel = new JPanel() {
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(POPUP_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
-                g2.setColor(BROWN);
-                g2.setStroke(new BasicStroke(3));
-                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
-            }
-        };
+        JPanel panel = createPopupPanel();
         panel.setLayout(null);
         dialog.add(panel);
 
@@ -290,7 +303,7 @@ public class EventDetailFrame extends JFrame {
         confirmBtn.setForeground(Color.WHITE);
         confirmBtn.setBounds(150, 200, 150, 45);
         confirmBtn.setFocusPainted(false);
-        confirmBtn.setBorder(new RoundedBorder(15));
+        confirmBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         confirmBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         confirmBtn.addActionListener(e -> {
             String inputCode = "";
@@ -309,7 +322,7 @@ public class EventDetailFrame extends JFrame {
     }
 
     private void applyEvent(JLabel slotsLabel, JLabel statusLabel, JButton applyButton) {
-        eventData.addRecipient(userName, "20231234", "O"); 
+        eventData.addRecipient(userName, userId, "O"); 
         
         slotsLabel.setText("신청 현황 : " + eventData.currentCount + " / " + eventData.totalCount + "명");
         isApplied = true;
@@ -330,17 +343,7 @@ public class EventDetailFrame extends JFrame {
         dialog.setUndecorated(true);
         dialog.setBackground(new Color(0,0,0,0));
 
-        JPanel panel = new JPanel() {
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(POPUP_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
-                g2.setColor(BROWN);
-                g2.setStroke(new BasicStroke(3));
-                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
-            }
-        };
+        JPanel panel = createPopupPanel();
         panel.setLayout(null);
         dialog.add(panel);
 
@@ -362,7 +365,7 @@ public class EventDetailFrame extends JFrame {
         confirmBtn.setForeground(Color.WHITE);
         confirmBtn.setBounds(135, 170, 130, 45);
         confirmBtn.setFocusPainted(false);
-        confirmBtn.setBorder(new RoundedBorder(15));
+        confirmBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         confirmBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         confirmBtn.addActionListener(e -> dialog.dispose());
         panel.add(confirmBtn);
@@ -377,17 +380,7 @@ public class EventDetailFrame extends JFrame {
         dialog.setSize(400, 250);
         dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel() {
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g;
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(POPUP_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
-                g2.setColor(BROWN);
-                g2.setStroke(new BasicStroke(3));
-                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
-            }
-        };
+        JPanel panel = createPopupPanel();
         panel.setLayout(null);
         dialog.add(panel);
 
@@ -402,10 +395,11 @@ public class EventDetailFrame extends JFrame {
         yesBtn.setBackground(BROWN);
         yesBtn.setForeground(Color.WHITE);
         yesBtn.setFocusPainted(false);
-        yesBtn.setBorder(new RoundedBorder(15));
+        yesBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
+            UserManager.logout();
             new LoginFrame();
             dispose();
         });
@@ -416,14 +410,31 @@ public class EventDetailFrame extends JFrame {
         noBtn.setBackground(BROWN);
         noBtn.setForeground(Color.WHITE);
         noBtn.setFocusPainted(false);
-        noBtn.setBorder(new RoundedBorder(15));
+        noBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         noBtn.setBounds(220, 150, 120, 45);
         noBtn.addActionListener(e -> dialog.dispose());
         panel.add(noBtn);
 
         dialog.setVisible(true);
     }
+    
+    // [추가] 팝업 배경 패널
+    private JPanel createPopupPanel() {
+        return new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+    }
 
+    // [수정] 네비게이션 버튼 (자유 이동)
     private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -438,10 +449,14 @@ public class EventDetailFrame extends JFrame {
                 public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
                 public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
                 public void mouseClicked(MouseEvent e) {
-                    if (text.equals("과행사")) return;
+                    if (text.equals("간식행사") || text.equals("과행사")) return;
+                    
                     if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
                     else if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
                     else if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); }
+                    else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); }
+                    else if (text.equals("빈 강의실")) { new EmptyClassFrame(); dispose(); }
+                    else if (text.equals("서울여대 꿀단지")) { new MainFrame(); dispose(); }
                     else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
                 }
             });
@@ -449,16 +464,22 @@ public class EventDetailFrame extends JFrame {
         return btn;
     }
 
+    // [중요] 이 클래스가 없어서 오류가 발생했던 것입니다.
     private static class RoundedBorder implements Border {
         private int radius;
-        public RoundedBorder(int r) { radius = r; }
+        private Color color;
+        private int thickness;
+        public RoundedBorder(int r, Color c, int t) {
+            radius = r; color = c; thickness = t;
+        }
         public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
         public boolean isBorderOpaque() { return false; }
         public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(c.getBackground());
-            g2.drawRoundRect(x, y, w-1, h-1, radius, radius);
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(thickness));
+            g2.drawRoundRect(x, y, w - 1, h - 1, radius, radius);
         }
     }
 }

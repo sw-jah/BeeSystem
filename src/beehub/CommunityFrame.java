@@ -30,6 +30,10 @@ public class CommunityFrame extends JFrame {
 
     private static Font uiFont;
     private ImageIcon heartIcon; 
+    
+    private String userName = "게스트";
+    private String userId = "";
+    private int userPoint = 0;
 
     // 폰트 로드 및 등록
     static {
@@ -52,7 +56,6 @@ public class CommunityFrame extends JFrame {
         }
     }
 
-    private String userName = "사용자"; 
     
     // UI 컴포넌트
     private JTextField searchField;
@@ -67,22 +70,26 @@ public class CommunityFrame extends JFrame {
     private final int itemsPerPage = 8; 
 
     public CommunityFrame() {
-        setTitle("서울여대 꿀단지 - 커뮤니티");
-        setSize(800, 650);
+    	setTitle("서울여대 꿀단지 - 공간대여");
+        setSize(850, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        loadImages();
-        initDummyData();
-        
+        // 사용자 정보 로드
+        User currentUser = UserManager.getCurrentUser();
+        if(currentUser != null) {
+            userName = currentUser.getName();
+            userId = currentUser.getId();
+            userPoint = currentUser.getPoints();
+        }
+
         initHeader();
         initNav();
         initContent();
 
-        setVisible(true);
-    }
+        setVisible(true);    }
     
     // [수정] 새 Post를 목록에 추가하고 UI를 새로고침하는 공개 메서드
     public void addPost(Post newPost) {
@@ -110,6 +117,8 @@ public class CommunityFrame extends JFrame {
             }
         } catch (Exception e) {}
     }
+    
+    
 
     private void initDummyData() {
         LocalDate today = LocalDate.now();
@@ -147,11 +156,12 @@ public class CommunityFrame extends JFrame {
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        JLabel userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : 100 | 로그아웃");
+        
+        JLabel userInfoText = new JLabel("[" + userName + "]님" +  " | 로그아웃");
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
+           
         // [수정] 로그아웃 팝업 호출
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) { 
@@ -170,7 +180,7 @@ public class CommunityFrame extends JFrame {
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
         add(navPanel);
 
-        String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (String menu : menus) {
             JButton menuBtn = createNavButton(menu, menu.equals("커뮤니티"));
             navPanel.add(menuBtn);

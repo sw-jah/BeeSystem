@@ -30,6 +30,7 @@ public class ItemListFrame extends JFrame {
     }
 
     private String userName = "사용자";
+    private String userId = "";
     private int userPoint = 100;
 
     private JLabel userInfoText;
@@ -45,6 +46,11 @@ public class ItemListFrame extends JFrame {
     public ItemListFrame() {
         setTitle("서울여대 꿀단지 - 물품대여");
         setSize(800, 600);
+        User currentUser = UserManager.getCurrentUser();
+        if(currentUser != null) {
+            userName = currentUser.getName();
+            userId = currentUser.getId();
+            userPoint = currentUser.getPoints();}
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(null);
@@ -78,7 +84,7 @@ public class ItemListFrame extends JFrame {
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
+        userInfoText = new JLabel("[" + userName + "]님 | 로그아웃");
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));

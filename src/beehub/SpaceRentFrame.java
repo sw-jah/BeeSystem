@@ -110,7 +110,7 @@ public class SpaceRentFrame extends JFrame {
         userInfoPanel.setBounds(450, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        JLabel userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
+        JLabel userInfoText = new JLabel("[" + userName + "]님" +  " | 로그아웃");
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -127,7 +127,7 @@ public class SpaceRentFrame extends JFrame {
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR));
         add(navPanel);
 
-        String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (int i = 0; i < menus.length; i++) {
             JButton menuBtn = createNavButton(menus[i], i == 2);
             navPanel.add(menuBtn);
