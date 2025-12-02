@@ -27,11 +27,10 @@ public class MainFrame extends JFrame {
         } catch (Exception e) { uiFont = new Font("맑은 고딕", Font.PLAIN, 14); }
     }
 
-    private JLabel userInfoText;
-    private JLabel notiText1;
-    private JLabel notiText2;
     private JPanel schedulePanel;
     private JLabel todayHeaderLabel; 
+    private JLabel notiText1;
+    private JLabel notiText2;
 
     public MainFrame() {
         setTitle("서울여대 꿀단지 - 메인");
@@ -43,13 +42,12 @@ public class MainFrame extends JFrame {
 
         initUI();
         refreshData();
-        
         setVisible(true);
     }
 
     private void initUI() {
-        JPanel headerPanel = new JPanel();
-        headerPanel.setLayout(null);
+        // --- 헤더 (공통) ---
+        JPanel headerPanel = new JPanel(null);
         headerPanel.setBounds(0, 0, 800, 80);
         headerPanel.setBackground(HEADER_YELLOW);
         add(headerPanel);
@@ -65,24 +63,34 @@ public class MainFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
+        // [수정] 사용자 정보 & 로그아웃 분리
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        userInfoText = new JLabel("로그인 필요"); 
-        userInfoText.setFont(uiFont.deriveFont(14f));
-        userInfoText.setForeground(BROWN);
-        userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        User user = UserManager.getCurrentUser();
+        String infoText = (user != null) 
+                ? "[" + user.getName() + "]님 | 보유 꿀: " + user.getPoints() + " | "
+                : "로그인이 필요합니다 | ";
         
-        userInfoText.addMouseListener(new MouseAdapter() {
+        JLabel userInfo = new JLabel(infoText);
+        userInfo.setFont(uiFont.deriveFont(14f));
+        userInfo.setForeground(BROWN);
+        userInfoPanel.add(userInfo);
+
+        JLabel logoutBtn = new JLabel("로그아웃");
+        logoutBtn.setFont(uiFont.deriveFont(14f));
+        logoutBtn.setForeground(BROWN);
+        logoutBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        logoutBtn.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) { showLogoutPopup(); }
         });
-
-        userInfoPanel.add(userInfoText);
+        userInfoPanel.add(logoutBtn);
+        
         headerPanel.add(userInfoPanel);
 
-        JPanel navPanel = new JPanel();
-        navPanel.setLayout(new GridLayout(1, 6));
+        // --- 네비게이션 (공통) ---
+        JPanel navPanel = new JPanel(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
         navPanel.setBackground(NAV_BG);
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
@@ -90,18 +98,18 @@ public class MainFrame extends JFrame {
 
         String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (String menu : menus) {
-            JButton menuBtn = createNavButton(menu);
+            // 현재 페이지는 active=true (null은 메인이 홈이라서 예외 처리)
+            JButton menuBtn = createNavButton(menu, false); 
             navPanel.add(menuBtn);
         }
 
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(null);
+        // --- 메인 컨텐츠 ---
+        JPanel contentPanel = new JPanel(null);
         contentPanel.setBounds(0, 130, 800, 470);
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        JLabel beeIcon = new JLabel();
-        beeIcon.setText("🐝");
+        JLabel beeIcon = new JLabel("🐝");
         beeIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         beeIcon.setBounds(50, 30, 50, 50);
         contentPanel.add(beeIcon);
@@ -112,17 +120,15 @@ public class MainFrame extends JFrame {
         notiTitle.setBounds(110, 40, 200, 30);
         contentPanel.add(notiTitle);
 
-        JPanel todayPanel = new JPanel();
-        todayPanel.setLayout(null);
+        JPanel todayPanel = new JPanel(null);
         todayPanel.setBounds(50, 90, 700, 150);
         todayPanel.setBackground(Color.WHITE);
         todayPanel.setBorder(new RoundedBorder(20, BROWN, 2));
         contentPanel.add(todayPanel);
 
-        JPanel todayHeader = new JPanel();
+        JPanel todayHeader = new JPanel(null);
         todayHeader.setBounds(2, 2, 696, 40);
         todayHeader.setBackground(HIGHLIGHT_YELLOW);
-        todayHeader.setLayout(null);
         
         todayHeaderLabel = new JLabel("TODAY");
         todayHeaderLabel.setFont(uiFont.deriveFont(18f));
@@ -144,8 +150,7 @@ public class MainFrame extends JFrame {
         notiText2.setBounds(0, 100, 700, 30);
         todayPanel.add(notiText2);
 
-        schedulePanel = new JPanel();
-        schedulePanel.setLayout(null);
+        schedulePanel = new JPanel(null);
         schedulePanel.setBackground(BG_MAIN);
 
         JScrollPane scrollPane = new JScrollPane(schedulePanel);
@@ -157,19 +162,12 @@ public class MainFrame extends JFrame {
     }
 
     private void refreshData() {
-        User user = UserManager.getCurrentUser();
-        if (user != null) {
-            userInfoText.setText("[" + user.getName() + "]님 | 보유 꿀 : " + user.getPoints() + " | 로그아웃");
-        } else {
-            userInfoText.setText("로그인이 필요합니다 | 로그인");
-        }
-
+        // 일정 데이터 로직 (기존 유지)
         String todayDate = "12월 5일";
         
         List<ScheduleItem> allSchedules = new ArrayList<>();
         allSchedules.add(new ScheduleItem("12월 5일", "노트북", "RETURN", 0)); 
         allSchedules.add(new ScheduleItem("12월 5일", "총학생회 간식행사", "SNACK", 15));
-        
         allSchedules.add(new ScheduleItem("12월 6일", "보조배터리", "RETURN", 0));
         allSchedules.add(new ScheduleItem("12월 6일", "소융의 밤 행사", "EVENT", 50));
         allSchedules.add(new ScheduleItem("12월 20일", "종강 파티", "EVENT", 0));
@@ -180,14 +178,8 @@ public class MainFrame extends JFrame {
 
         if (!todayItems.isEmpty()) {
             ScheduleItem highlightItem = null;
-            for(ScheduleItem item : todayItems) {
-                if(item.type.equals("SNACK")) { highlightItem = item; break; }
-            }
-            if(highlightItem == null) {
-                for(ScheduleItem item : todayItems) {
-                    if(item.type.equals("RETURN")) { highlightItem = item; break; }
-                }
-            }
+            for(ScheduleItem item : todayItems) if(item.type.equals("SNACK")) { highlightItem = item; break; }
+            if(highlightItem == null) for(ScheduleItem item : todayItems) if(item.type.equals("RETURN")) { highlightItem = item; break; }
             if(highlightItem == null) highlightItem = todayItems.get(0);
 
             todayHeaderLabel.setText(todayDate + " TODAY");
@@ -213,13 +205,11 @@ public class MainFrame extends JFrame {
 
         schedulePanel.removeAll();
         int yPos = 0;
-        
         for (ScheduleItem item : futureItems) {
             String displayContent = item.type.equals("RETURN") ? "'" + item.title + "' 반납" : item.title;
             addScheduleItem(schedulePanel, item.date, displayContent, yPos);
             yPos += 45; 
         }
-        
         schedulePanel.setPreferredSize(new Dimension(680, yPos));
         schedulePanel.revalidate();
         schedulePanel.repaint();
@@ -232,26 +222,32 @@ public class MainFrame extends JFrame {
         }
     }
 
-    private JButton createNavButton(String text) {
+    // [중요] 네비게이션 버튼 생성 (모든 프레임 공통)
+    private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
         btn.setForeground(BROWN);
-        btn.setBackground(NAV_BG);
+        btn.setBackground(isActive ? HIGHLIGHT_YELLOW : NAV_BG);
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.addMouseListener(new MouseAdapter() {
-            public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
-            public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
-            public void mouseClicked(MouseEvent e) {
-                if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); return; }
-                if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
-                else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
-                else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
-                else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); }
-                else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
-            }
-        });
+        
+        if (!isActive) {
+            btn.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
+                public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
+                public void mouseClicked(MouseEvent e) {
+                    if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); }
+                    else if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
+                    else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
+                    else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
+                    else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); }
+                    else if (text.equals("빈 강의실")) { new EmptyClassFrame(); dispose(); }
+                    else if (text.equals("메인으로") || text.equals("서울여대 꿀단지")) { new MainFrame(); dispose(); } // 로고 클릭 등
+                    else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
+                }
+            });
+        }
         return btn;
     }
 
@@ -305,7 +301,7 @@ public class MainFrame extends JFrame {
         dialog.setBackground(new Color(0,0,0,0));
         dialog.setSize(400, 250);
         dialog.setLocationRelativeTo(this);
-
+        
         JPanel panel = createPopupPanel();
         panel.setLayout(null);
         dialog.add(panel);
@@ -320,7 +316,7 @@ public class MainFrame extends JFrame {
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
-            UserManager.logout(); // [중요] 로그아웃
+            UserManager.logout();
             new LoginFrame(); 
             dispose();
         });
@@ -361,12 +357,8 @@ public class MainFrame extends JFrame {
     }
 
     private static class RoundedBorder implements Border {
-        private int radius;
-        private Color color;
-        private int thickness;
-        public RoundedBorder(int r, Color c, int t) {
-            radius = r; color = c; thickness = t;
-        }
+        private int radius; private Color color; private int thickness;
+        public RoundedBorder(int r, Color c, int t) { radius = r; color = c; thickness = t; }
         public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
         public boolean isBorderOpaque() { return false; }
         public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
