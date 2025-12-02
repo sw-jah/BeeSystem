@@ -62,7 +62,7 @@ public class AdminLotteryFrame extends JFrame {
         titleLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(titleLabel);
 
-        JButton homeBtn = new JButton("🏠 메인으로");
+        JButton homeBtn = new JButton("<-메인으로");
         homeBtn.setFont(uiFont.deriveFont(14f));
         homeBtn.setBackground(BROWN);
         homeBtn.setForeground(Color.WHITE);
@@ -108,7 +108,7 @@ public class AdminLotteryFrame extends JFrame {
         regBtn.addActionListener(e -> new AdminLotteryAddDialog(this));
         controlPanel.add(regBtn);
 
-        drawBtn = new JButton("🎲 추첨 시작");
+        drawBtn = new JButton("추첨 시작");
         drawBtn.setFont(uiFont.deriveFont(14f));
         drawBtn.setBackground(BLUE_BTN);
         drawBtn.setForeground(Color.WHITE);
@@ -174,7 +174,7 @@ public class AdminLotteryFrame extends JFrame {
             drawBtn.setBackground(Color.GRAY);
             drawBtn.setBorder(new RoundedBorder(15, Color.GRAY));
         } else {
-            drawBtn.setText("🎲 추첨 시작");
+            drawBtn.setText("추첨 시작");
             drawBtn.setEnabled(true);
             drawBtn.setBackground(BLUE_BTN);
             drawBtn.setBorder(new RoundedBorder(15, BLUE_BTN));

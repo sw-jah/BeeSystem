@@ -103,12 +103,18 @@ public class MainFrame extends JFrame {
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        JLabel beeIcon = new JLabel("🐝");
-        beeIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-        beeIcon.setBounds(50, 30, 50, 50);
-        contentPanel.add(beeIcon);
+        ImageIcon originalIcon = new ImageIcon(MainFrame.class.getResource("/img/login-bee.png"));
 
-        JLabel notiTitle = new JLabel("일정 알리미");
+     // 이미지를 50x50 크기로 부드럽게 조절
+     Image img = originalIcon.getImage();
+     Image scaledImg = img.getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+     ImageIcon scaledIcon = new ImageIcon(scaledImg);
+
+     JLabel beeIcon = new JLabel(scaledIcon);
+     beeIcon.setBounds(50, 30, 50, 50); // 위치 및 크기 설정
+     contentPanel.add(beeIcon);
+
+        JLabel notiTitle = new JLabel("일정 알리비");
         notiTitle.setFont(uiFont.deriveFont(24f));
         notiTitle.setForeground(BROWN);
         notiTitle.setBounds(110, 40, 200, 30);
@@ -233,7 +239,7 @@ public class MainFrame extends JFrame {
                     // 각 버튼 클릭 시 해당 프레임 생성 후 현재 창 닫기
                     if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); }
                     else if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
-                    else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
+                    else if (text.equals("과행사")) { new EventListFrame(); dispose(); }
                     else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
                     else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); }
                     else if (text.equals("빈 강의실")) { new EmptyClassFrame(); dispose(); }

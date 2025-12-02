@@ -69,7 +69,7 @@ public class AdminSpaceManageFrame extends JFrame {
         titleLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(titleLabel);
 
-        JButton homeBtn = new JButton("🏠 메인으로");
+        JButton homeBtn = new JButton("<-메인으로");
         homeBtn.setFont(uiFont.deriveFont(14f));
         homeBtn.setBackground(BROWN);
         homeBtn.setForeground(Color.WHITE);
