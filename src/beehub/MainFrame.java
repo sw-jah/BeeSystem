@@ -11,9 +11,6 @@ import java.util.stream.Collectors;
 
 public class MainFrame extends JFrame {
 
-    // ===============================
-    // 🎨 컬러 테마
-    // ===============================
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color NAV_BG = new Color(255, 255, 255);
     private static final Color BG_MAIN = new Color(255, 255, 255);
@@ -21,28 +18,14 @@ public class MainFrame extends JFrame {
     private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
     private static final Color POPUP_BG = new Color(255, 250, 205);
 
-    // ===============================
-    // 🔤 폰트 설정
-    // ===============================
     private static Font uiFont;
-
     static {
         try {
             InputStream is = MainFrame.class.getResourceAsStream("/fonts/DNFBitBitv2.ttf");
-            if (is == null) {
-                uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
-            } else {
-                Font base = Font.createFont(Font.TRUETYPE_FONT, is);
-                uiFont = base.deriveFont(14f);
-            }
-        } catch (Exception e) {
-            uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
-        }
+            if (is == null) uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
+            else uiFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(14f);
+        } catch (Exception e) { uiFont = new Font("맑은 고딕", Font.PLAIN, 14); }
     }
-
-    // 사용자 정보 (추후 DB 연동 시 이 변수 변경)
-    private String userName = "사용자";
-    private int userPoint = 100;
 
     private JLabel userInfoText;
     private JLabel notiText1;
@@ -65,7 +48,6 @@ public class MainFrame extends JFrame {
     }
 
     private void initUI() {
-        // --- 상단 헤더 ---
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBounds(0, 0, 800, 80);
@@ -83,27 +65,22 @@ public class MainFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
-        // [수정] 프로필 아이콘 제거, 텍스트만 표시
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
 
-        userInfoText = new JLabel("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃"); 
+        userInfoText = new JLabel("로그인 필요"); 
         userInfoText.setFont(uiFont.deriveFont(14f));
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // 로그아웃 팝업 연결
         userInfoText.addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent e) {
-                showLogoutPopup();
-            }
+            public void mouseClicked(MouseEvent e) { showLogoutPopup(); }
         });
 
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
-        // --- 네비게이션 ---
         JPanel navPanel = new JPanel();
         navPanel.setLayout(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
@@ -117,7 +94,6 @@ public class MainFrame extends JFrame {
             navPanel.add(menuBtn);
         }
 
-        // --- 메인 컨텐츠 ---
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(null);
         contentPanel.setBounds(0, 130, 800, 470);
@@ -125,15 +101,8 @@ public class MainFrame extends JFrame {
         add(contentPanel);
 
         JLabel beeIcon = new JLabel();
-        String imgPath = "resource/img/login-bee.png"; 
-        ImageIcon originalIcon = new ImageIcon(imgPath);
-        if (originalIcon.getIconWidth() > 0) {
-            Image img = originalIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-            beeIcon.setIcon(new ImageIcon(img));
-        } else {
-            beeIcon.setText("🐝");
-            beeIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-        }
+        beeIcon.setText("🐝");
+        beeIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         beeIcon.setBounds(50, 30, 50, 50);
         contentPanel.add(beeIcon);
 
@@ -143,7 +112,6 @@ public class MainFrame extends JFrame {
         notiTitle.setBounds(110, 40, 200, 30);
         contentPanel.add(notiTitle);
 
-        // [TODAY 알림 박스]
         JPanel todayPanel = new JPanel();
         todayPanel.setLayout(null);
         todayPanel.setBounds(50, 90, 700, 150);
@@ -176,7 +144,6 @@ public class MainFrame extends JFrame {
         notiText2.setBounds(0, 100, 700, 30);
         todayPanel.add(notiText2);
 
-        // [일정 리스트 패널]
         schedulePanel = new JPanel();
         schedulePanel.setLayout(null);
         schedulePanel.setBackground(BG_MAIN);
@@ -190,7 +157,12 @@ public class MainFrame extends JFrame {
     }
 
     private void refreshData() {
-        userInfoText.setText("[" + userName + "]님 | 보유 꿀 : " + userPoint + " | 로그아웃");
+        User user = UserManager.getCurrentUser();
+        if (user != null) {
+            userInfoText.setText("[" + user.getName() + "]님 | 보유 꿀 : " + user.getPoints() + " | 로그아웃");
+        } else {
+            userInfoText.setText("로그인이 필요합니다 | 로그인");
+        }
 
         String todayDate = "12월 5일";
         
@@ -201,7 +173,6 @@ public class MainFrame extends JFrame {
         allSchedules.add(new ScheduleItem("12월 6일", "보조배터리", "RETURN", 0));
         allSchedules.add(new ScheduleItem("12월 6일", "소융의 밤 행사", "EVENT", 50));
         allSchedules.add(new ScheduleItem("12월 20일", "종강 파티", "EVENT", 0));
-        allSchedules.add(new ScheduleItem("12월 25일", "크리스마스 행사", "EVENT", 0));
         
         List<ScheduleItem> todayItems = allSchedules.stream()
                 .filter(item -> item.date.equals(todayDate))
@@ -244,12 +215,7 @@ public class MainFrame extends JFrame {
         int yPos = 0;
         
         for (ScheduleItem item : futureItems) {
-            String displayContent = "";
-            if (item.type.equals("RETURN")) {
-                displayContent = "'" + item.title + "' 반납";
-            } else {
-                displayContent = item.title; 
-            }
+            String displayContent = item.type.equals("RETURN") ? "'" + item.title + "' 반납" : item.title;
             addScheduleItem(schedulePanel, item.date, displayContent, yPos);
             yPos += 45; 
         }
@@ -260,20 +226,12 @@ public class MainFrame extends JFrame {
     }
 
     class ScheduleItem {
-        String date;
-        String title;
-        String type; 
-        int count;  
-
+        String date; String title; String type; int count;  
         public ScheduleItem(String date, String title, String type, int count) {
-            this.date = date;
-            this.title = title;
-            this.type = type;
-            this.count = count;
+            this.date = date; this.title = title; this.type = type; this.count = count;
         }
     }
 
-    // [수정] 네비게이션 연결 로직
     private JButton createNavButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -286,23 +244,12 @@ public class MainFrame extends JFrame {
             public void mouseEntered(MouseEvent e) { btn.setBackground(HIGHLIGHT_YELLOW); }
             public void mouseExited(MouseEvent e) { btn.setBackground(NAV_BG); }
             public void mouseClicked(MouseEvent e) {
-                if (text.equals("마이페이지")) {
-                    new MyPageFrame(); // [수정] MyPageFrame 열기
-                    dispose(); // 현재 창 닫기
-                    return;
-                }
-                
-                if (text.equals("공간대여")) {
-                    new SpaceRentFrame(); dispose();
-                } else if (text.equals("간식행사")) {
-                    new EventListFrame(); dispose();
-                } else if (text.equals("물품대여")) {
-                    new ItemListFrame(); dispose();
-                } else if (text.equals("커뮤니티")) {
-                    new CommunityFrame(); dispose();
-                } else {
-                    showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
-                }
+                if (text.equals("마이페이지")) { new MyPageFrame(); dispose(); return; }
+                if (text.equals("공간대여")) { new SpaceRentFrame(); dispose(); }
+                else if (text.equals("간식행사") || text.equals("과행사")) { new EventListFrame(); dispose(); }
+                else if (text.equals("물품대여")) { new ItemListFrame(); dispose(); }
+                else if (text.equals("커뮤니티")) { new CommunityFrame(); dispose(); }
+                else { showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다."); }
             }
         });
         return btn;
@@ -313,22 +260,18 @@ public class MainFrame extends JFrame {
         dateLabel.setFont(uiFont.deriveFont(16f));
         dateLabel.setForeground(BROWN);
         dateLabel.setBounds(10, y, 100, 30);
-        dateLabel.setHorizontalAlignment(SwingConstants.LEFT); 
         
         JLabel barLabel = new JLabel("|");
         barLabel.setFont(uiFont.deriveFont(16f));
         barLabel.setForeground(Color.LIGHT_GRAY);
         barLabel.setBounds(110, y, 20, 30);
-        barLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JLabel contentLabel = new JLabel(content);
         contentLabel.setFont(uiFont.deriveFont(18f));
         contentLabel.setForeground(BROWN); 
         contentLabel.setBounds(135, y, 530, 30); 
 
-        panel.add(dateLabel);
-        panel.add(barLabel);
-        panel.add(contentLabel);
+        panel.add(dateLabel); panel.add(barLabel); panel.add(contentLabel);
     }
 
     private void showSimplePopup(String title, String message) {
@@ -356,7 +299,6 @@ public class MainFrame extends JFrame {
         dialog.setVisible(true);
     }
 
-    // [수정] 로그아웃 팝업 (네/아니오)
     private void showLogoutPopup() {
         JDialog dialog = new JDialog(this, "로그아웃", true);
         dialog.setUndecorated(true);
@@ -378,7 +320,8 @@ public class MainFrame extends JFrame {
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
-            // new LoginFrame(); // 로그인 화면으로 이동
+            UserManager.logout(); // [중요] 로그아웃
+            new LoginFrame(); 
             dispose();
         });
         panel.add(yesBtn);
@@ -421,7 +364,7 @@ public class MainFrame extends JFrame {
         private int radius;
         private Color color;
         private int thickness;
-        public RoundedBorder(int r, Color c, int t) { 
+        public RoundedBorder(int r, Color c, int t) {
             radius = r; color = c; thickness = t;
         }
         public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
