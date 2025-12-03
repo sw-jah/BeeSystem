@@ -8,6 +8,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+// [중요] ItemManager 사용
+import beehub.ItemManager;
+import beehub.ItemManager.Item;
+
 public class AdminItemAddDialog extends JDialog {
 
     private static final Color BG_YELLOW = new Color(255, 250, 205);
@@ -25,14 +29,15 @@ public class AdminItemAddDialog extends JDialog {
     }
 
     private AdminItemManageFrame parent;
-    private AdminItemManageFrame.ItemData currentItem; 
+    private Item currentItem; 
     private String selectedImagePath = null;
+
     private JTextField nameField;
     private JSpinner stockSpinner, daySpinner;
     private JLabel imagePreview;
     private List<JCheckBox> majorCheckBoxes = new ArrayList<>();
 
-    public AdminItemAddDialog(AdminItemManageFrame parent, AdminItemManageFrame.ItemData item) {
+    public AdminItemAddDialog(AdminItemManageFrame parent, Item item) {
         super(parent, item == null ? "물품 등록" : "물품 수정", true);
         this.parent = parent;
         this.currentItem = item;
@@ -44,6 +49,7 @@ public class AdminItemAddDialog extends JDialog {
 
         initUI();
         if (item != null) loadData(item);
+        
         setVisible(true);
     }
 
@@ -174,7 +180,7 @@ public class AdminItemAddDialog extends JDialog {
         return b;
     }
 
-    private void loadData(AdminItemManageFrame.ItemData item) {
+    private void loadData(Item item) {
         nameField.setText(item.name);
         stockSpinner.setValue(item.stock);
         daySpinner.setValue(item.rentDays);
@@ -209,19 +215,21 @@ public class AdminItemAddDialog extends JDialog {
         if(majors.isEmpty()) majors = "대상 없음";
 
         if(currentItem == null) {
-            parent.addItem(new AdminItemManageFrame.ItemData(name, stock, days, majors, selectedImagePath));
+            // [중요] 신규 등록 시 Manager를 통해 저장
+            ItemManager.addItem(new Item(name, stock, days, majors, selectedImagePath));
         } else {
+            // [중요] 수정 시 Manager를 통해 저장
             currentItem.name = name;
             currentItem.stock = stock;
             currentItem.rentDays = days;
             currentItem.targetMajor = majors;
             currentItem.imagePath = selectedImagePath;
-            parent.refreshList();
+            ItemManager.save(); 
         }
+        parent.refreshList();
         dispose();
     }
 
-    // 🎨 이쁜 팝업
     private void showMsgPopup(String title, String msg) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setUndecorated(true);
@@ -230,15 +238,14 @@ public class AdminItemAddDialog extends JDialog {
         dialog.setBackground(new Color(0,0,0,0));
 
         JPanel panel = new JPanel() {
-            @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(POPUP_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),30,30);
                 g2.setColor(BROWN);
                 g2.setStroke(new BasicStroke(3));
-                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+                g2.drawRoundRect(1,1,getWidth()-3,getHeight()-3,30,30);
             }
         };
         panel.setLayout(null);
@@ -250,14 +257,12 @@ public class AdminItemAddDialog extends JDialog {
         l.setBounds(20, 80, 360, 30);
         panel.add(l);
 
-        JButton okBtn = new JButton("확인");
-        okBtn.setFont(uiFont.deriveFont(16f));
-        okBtn.setBackground(BROWN);
-        okBtn.setForeground(Color.WHITE);
-        okBtn.setBounds(135, 170, 130, 45);
-        okBtn.setFocusPainted(false);
-        okBtn.addActionListener(e -> dialog.dispose());
-        panel.add(okBtn);
+        JButton ok = new JButton("확인");
+        ok.setBounds(135, 170, 130, 45);
+        ok.setBackground(BROWN);
+        ok.setForeground(Color.WHITE);
+        ok.addActionListener(e -> dialog.dispose());
+        panel.add(ok);
 
         dialog.setVisible(true);
     }

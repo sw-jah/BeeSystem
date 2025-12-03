@@ -3,16 +3,17 @@ package admin;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.event.*;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.util.List;
+import beehub.ItemManager; // [중요] ItemManager 사용
+import beehub.ItemManager.Item;
 
 public class AdminItemManageFrame extends JFrame {
 
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BROWN = new Color(139, 90, 43);
-    private static final Color POPUP_BG = new Color(255, 250, 205); // 팝업 배경색
+    private static final Color POPUP_BG = new Color(255, 250, 205);
     
     private static Font uiFont;
     static {
@@ -24,7 +25,6 @@ public class AdminItemManageFrame extends JFrame {
     }
 
     private JPanel itemListPanel;
-    private ArrayList<ItemData> itemList = new ArrayList<>();
 
     public AdminItemManageFrame() {
         setTitle("관리자 - 물품 관리");
@@ -34,232 +34,191 @@ public class AdminItemManageFrame extends JFrame {
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        // 테스트 데이터
-        itemList.add(new ItemData("C타입 충전기", 3, 1, "전체 학과", null));
-        itemList.add(new ItemData("노트북", 5, 3, "소프트웨어융합학과", null));
-
         initUI();
-        refreshList();
+        refreshList(); // 시작 시 목록 불러오기
         setVisible(true);
     }
 
     private void initUI() {
-        JPanel headerPanel = new JPanel();
-        headerPanel.setLayout(null);
-        headerPanel.setBounds(0, 0, 800, 80);
-        headerPanel.setBackground(HEADER_YELLOW);
-        add(headerPanel);
+        JPanel header = new JPanel(null);
+        header.setBounds(0, 0, 800, 80);
+        header.setBackground(HEADER_YELLOW);
+        add(header);
 
-        JLabel titleLabel = new JLabel("물품 관리");
-        titleLabel.setFont(uiFont.deriveFont(32f));
-        titleLabel.setForeground(BROWN);
-        titleLabel.setBounds(30, 20, 200, 40);
-        headerPanel.add(titleLabel);
+        JLabel title = new JLabel("물품 관리");
+        title.setFont(uiFont.deriveFont(32f));
+        title.setForeground(BROWN);
+        title.setBounds(30, 20, 200, 40);
+        header.add(title);
 
         JButton homeBtn = new JButton("<-메인으로");
+        homeBtn.setBounds(650, 25, 110, 35);
         homeBtn.setFont(uiFont.deriveFont(14f));
         homeBtn.setBackground(BROWN);
         homeBtn.setForeground(Color.WHITE);
-        homeBtn.setBounds(650, 25, 110, 35);
         homeBtn.setBorder(new RoundedBorder(15, BROWN));
-        homeBtn.setFocusPainted(false);
-        homeBtn.addActionListener(e -> {
-            new AdminMainFrame();
-            dispose();
-        });
-        headerPanel.add(homeBtn);
+        homeBtn.addActionListener(e -> { new AdminMainFrame(); dispose(); });
+        header.add(homeBtn);
 
         JButton addBtn = new JButton("+ 물품 등록");
+        addBtn.setBounds(630, 100, 130, 40);
         addBtn.setFont(uiFont.deriveFont(16f));
         addBtn.setBackground(BROWN);
         addBtn.setForeground(Color.WHITE);
-        addBtn.setBounds(630, 100, 130, 40);
         addBtn.setBorder(new RoundedBorder(15, BROWN));
-        addBtn.setFocusPainted(false);
         addBtn.addActionListener(e -> new AdminItemAddDialog(this, null));
         add(addBtn);
 
-        itemListPanel = new JPanel();
-        itemListPanel.setLayout(null);
+        itemListPanel = new JPanel(null);
         itemListPanel.setBackground(BG_MAIN);
         
-        JScrollPane scrollPane = new JScrollPane(itemListPanel);
-        scrollPane.setBounds(30, 150, 730, 400);
-        scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        add(scrollPane);
+        JScrollPane scroll = new JScrollPane(itemListPanel);
+        scroll.setBounds(30, 150, 730, 400);
+        scroll.setBorder(null);
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        add(scroll);
     }
 
     public void refreshList() {
         itemListPanel.removeAll();
-        int yPos = 10;
+        // [중요] Manager에서 리스트 가져옴
+        List<Item> items = ItemManager.getAllItems();
+        int y = 0;
 
-        for (int i = 0; i < itemList.size(); i++) {
-            ItemData item = itemList.get(i);
+        for (int i = 0; i < items.size(); i++) {
+            Item item = items.get(i);
             JPanel card = createItemCard(item, i);
-            card.setBounds(10, yPos, 700, 100);
+            card.setBounds(10, y, 700, 100);
             itemListPanel.add(card);
-            yPos += 110;
+            y += 110;
         }
 
-        itemListPanel.setPreferredSize(new Dimension(700, yPos));
+        itemListPanel.setPreferredSize(new Dimension(700, y));
         itemListPanel.revalidate();
         itemListPanel.repaint();
     }
 
-    private JPanel createItemCard(ItemData item, int index) {
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(Color.WHITE);
-        panel.setBorder(new RoundedBorder(15, Color.LIGHT_GRAY));
+    private JPanel createItemCard(Item item, int index) {
+        JPanel p = new JPanel(null);
+        p.setBackground(Color.WHITE);
+        p.setBorder(new RoundedBorder(15, Color.LIGHT_GRAY));
 
-        JLabel imgLabel = new JLabel();
-        imgLabel.setBounds(15, 15, 70, 70);
-        imgLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        imgLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        if (item.imagePath != null) {
+        JLabel icon = new JLabel("📦", SwingConstants.CENTER);
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+        icon.setBounds(15, 15, 70, 70);
+        icon.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        if(item.imagePath != null) {
             try {
-                ImageIcon icon = new ImageIcon(item.imagePath);
-                Image img = icon.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH);
-                imgLabel.setIcon(new ImageIcon(img));
-            } catch (Exception e) {
-                imgLabel.setText("📦");
-                imgLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-            }
-        } else {
-            imgLabel.setText("📦");
-            imgLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
+                ImageIcon ii = new ImageIcon(item.imagePath);
+                icon.setIcon(new ImageIcon(ii.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH)));
+                icon.setText("");
+            } catch(Exception e) { /* 이미지 로드 실패 시 이모지 유지 */ }
         }
-        panel.add(imgLabel);
+        p.add(icon);
 
-        JLabel nameLabel = new JLabel(item.name);
-        nameLabel.setFont(uiFont.deriveFont(20f));
-        nameLabel.setForeground(BROWN);
-        nameLabel.setBounds(100, 15, 300, 25);
-        panel.add(nameLabel);
+        JLabel name = new JLabel(item.name);
+        name.setFont(uiFont.deriveFont(20f));
+        name.setForeground(BROWN);
+        name.setBounds(100, 15, 300, 25);
+        p.add(name);
 
-        String info = "재고: " + item.stock + "개 | 대여기간: " + item.rentDays + "일 | 대상: " + item.targetMajor;
-        JLabel detailLabel = new JLabel(info);
-        detailLabel.setFont(uiFont.deriveFont(14f));
-        detailLabel.setForeground(Color.GRAY);
-        detailLabel.setBounds(100, 50, 400, 20);
-        panel.add(detailLabel);
+        JLabel info = new JLabel("재고: " + item.stock + " | 기간: " + item.rentDays + "일 | " + item.targetMajor);
+        info.setFont(uiFont.deriveFont(14f));
+        info.setForeground(Color.GRAY);
+        info.setBounds(100, 50, 400, 20);
+        p.add(info);
 
-        JButton editBtn = new JButton("수정");
-        editBtn.setFont(uiFont.deriveFont(12f));
-        editBtn.setBackground(new Color(255, 238, 140));
-        editBtn.setForeground(BROWN);
-        editBtn.setBounds(530, 30, 70, 40);
-        editBtn.setBorder(new RoundedBorder(10, BROWN));
-        editBtn.addActionListener(e -> new AdminItemAddDialog(this, item));
-        panel.add(editBtn);
+        JButton edit = new JButton("수정");
+        edit.setBounds(530, 30, 70, 40);
+        edit.setFont(uiFont.deriveFont(12f));
+        edit.setBackground(new Color(255, 238, 140));
+        edit.setForeground(BROWN);
+        edit.setBorder(new RoundedBorder(10, BROWN));
+        edit.addActionListener(e -> new AdminItemAddDialog(this, item));
+        p.add(edit);
 
-        JButton delBtn = new JButton("삭제");
-        delBtn.setFont(uiFont.deriveFont(12f));
-        delBtn.setBackground(new Color(255, 100, 100));
-        delBtn.setForeground(Color.WHITE);
-        delBtn.setBounds(610, 30, 70, 40);
-        delBtn.setBorder(new RoundedBorder(10, new Color(200, 50, 50)));
-        delBtn.addActionListener(e -> {
-            // [수정] 이쁜 팝업으로 변경
+        JButton del = new JButton("삭제");
+        del.setBounds(610, 30, 70, 40);
+        del.setFont(uiFont.deriveFont(12f));
+        del.setBackground(new Color(255, 100, 100));
+        del.setForeground(Color.WHITE);
+        del.setBorder(new RoundedBorder(10, new Color(200, 50, 50)));
+        del.addActionListener(e -> {
             boolean confirm = showConfirmPopup("삭제 확인", "정말 [" + item.name + "] 항목을\n삭제하시겠습니까?");
             if(confirm) {
-                itemList.remove(index);
+                // [중요] Manager를 통해 삭제 (파일 저장됨)
+                ItemManager.deleteItem(index);
                 refreshList();
             }
         });
-        panel.add(delBtn);
+        p.add(del);
 
-        return panel;
+        return p;
     }
 
-    public void addItem(ItemData newItem) {
-        itemList.add(newItem);
-        refreshList();
-    }
-
-    // ==========================================
-    // 🎨 이쁜 팝업 메소드 (공통 사용)
-    // ==========================================
+    // 🎨 이쁜 팝업
     private boolean showConfirmPopup(String title, String msg) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setUndecorated(true);
         dialog.setSize(400, 250);
         dialog.setLocationRelativeTo(this);
         dialog.setBackground(new Color(0,0,0,0));
+        final boolean[] res = {false};
 
-        final boolean[] result = {false};
-
-        JPanel panel = new JPanel() {
-            @Override
+        JPanel p = new JPanel() {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(POPUP_BG);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),30,30);
                 g2.setColor(BROWN);
                 g2.setStroke(new BasicStroke(3));
-                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+                g2.drawRoundRect(1,1,getWidth()-3,getHeight()-3,30,30);
             }
         };
-        panel.setLayout(null);
-        dialog.add(panel);
+        p.setLayout(null);
+        dialog.add(p);
 
         String[] lines = msg.split("\n");
-        int yPos = lines.length == 1 ? 80 : 60;
-        for (String line : lines) {
+        int y = lines.length == 1 ? 80 : 60;
+        for(String line : lines) {
             JLabel l = new JLabel(line, SwingConstants.CENTER);
             l.setFont(uiFont.deriveFont(18f));
             l.setForeground(BROWN);
-            l.setBounds(20, yPos, 360, 30);
-            panel.add(l);
-            yPos += 30;
+            l.setBounds(20, y, 360, 30);
+            p.add(l);
+            y+=30;
         }
 
-        JButton yesBtn = new JButton("네");
-        yesBtn.setBounds(60, 160, 120, 45);
-        yesBtn.setBackground(BROWN);
-        yesBtn.setForeground(Color.WHITE);
-        yesBtn.setFont(uiFont.deriveFont(16f));
-        yesBtn.setBorder(new RoundedBorder(15, BROWN));
-        yesBtn.setFocusPainted(false);
-        yesBtn.addActionListener(e -> { result[0] = true; dialog.dispose(); });
-        panel.add(yesBtn);
+        JButton yes = new JButton("네");
+        yes.setBounds(60, 160, 120, 45);
+        yes.setBackground(BROWN);
+        yes.setForeground(Color.WHITE);
+        yes.addActionListener(e -> { res[0]=true; dialog.dispose(); });
+        p.add(yes);
 
-        JButton noBtn = new JButton("아니오");
-        noBtn.setBounds(220, 160, 120, 45);
-        noBtn.setBackground(BROWN);
-        noBtn.setForeground(Color.WHITE);
-        noBtn.setFont(uiFont.deriveFont(16f));
-        noBtn.setBorder(new RoundedBorder(15, BROWN));
-        noBtn.setFocusPainted(false);
-        noBtn.addActionListener(e -> { result[0] = false; dialog.dispose(); });
-        panel.add(noBtn);
+        JButton no = new JButton("아니오");
+        no.setBounds(220, 160, 120, 45);
+        no.setBackground(BROWN);
+        no.setForeground(Color.WHITE);
+        no.addActionListener(e -> { res[0]=false; dialog.dispose(); });
+        p.add(no);
 
         dialog.setVisible(true);
-        return result[0];
-    }
-    
-    // 데이터 클래스
-    public static class ItemData {
-        String name; int stock; int rentDays; String targetMajor; String imagePath;
-        public ItemData(String n, int s, int r, String t, String i) {
-            name = n; stock = s; rentDays = r; targetMajor = t; imagePath = i;
-        }
+        return res[0];
     }
 
     private static class RoundedBorder implements Border {
-        private int radius; private Color color;
-        public RoundedBorder(int r, Color c) { radius = r; color = c; }
-        public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
+        private int r; private Color c;
+        public RoundedBorder(int r, Color c) { this.r=r; this.c=c; }
+        public Insets getBorderInsets(Component c) { return new Insets(r/2,r/2,r/2,r/2); }
         public boolean isBorderOpaque() { return false; }
         public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-            Graphics2D g2 = (Graphics2D) g;
+            Graphics2D g2 = (Graphics2D)g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(color);
+            g2.setColor(this.c);
             g2.setStroke(new BasicStroke(2));
-            g2.drawRoundRect(x, y, w-1, h-1, radius, radius);
+            g2.drawRoundRect(x,y,w-1,h-1,r,r);
         }
     }
 }

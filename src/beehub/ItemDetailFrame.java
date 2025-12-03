@@ -5,12 +5,16 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
-import admin.PenaltyManager; // [추가] 패널티 매니저 임포트
+import java.util.List;
+
+// [중요] 매니저 클래스 임포트
+import admin.PenaltyManager; 
+import beehub.ItemManager;   
 
 public class ItemDetailFrame extends JFrame {
 
     // ===============================
-    // 🎨 컬러 테마 & 폰트
+    // 🎨 UI 디자인 상수
     // ===============================
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color NAV_BG = new Color(255, 255, 255);
@@ -39,15 +43,12 @@ public class ItemDetailFrame extends JFrame {
     }
 
     // ===============================
-    // 👤 사용자 정보
+    // 👤 사용자 및 물품 변수
     // ===============================
     private String userName = "사용자";
-    private String userId = "";
+    private String userId = ""; // 로그인한 사용자 ID
     private int userPoint = 100;
 
-    // ===============================
-    // 📦 물품 정보
-    // ===============================
     private String itemName;
     private int stock;
     private String status;
@@ -105,7 +106,6 @@ public class ItemDetailFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
-        // 상단 사용자 정보 패널
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
@@ -115,7 +115,6 @@ public class ItemDetailFrame extends JFrame {
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // 로그아웃 클릭 이벤트
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 showLogoutPopup();
@@ -133,7 +132,7 @@ public class ItemDetailFrame extends JFrame {
         navPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
         add(navPanel);
 
-        String[] menus = {"물품대여", "간식행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
+        String[] menus = {"물품대여", "과행사", "공간대여", "빈 강의실", "커뮤니티", "마이페이지"};
         for (int i = 0; i < menus.length; i++) {
             JButton menuBtn = createNavButton(menus[i], i == 0);
             navPanel.add(menuBtn);
@@ -146,7 +145,7 @@ public class ItemDetailFrame extends JFrame {
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
-        // 이전 화면 버튼
+        // 뒤로가기 버튼
         JButton backButton = new JButton("이전 화면");
         backButton.setFont(uiFont.deriveFont(14f));
         backButton.setForeground(Color.WHITE);
@@ -161,7 +160,7 @@ public class ItemDetailFrame extends JFrame {
         });
         contentPanel.add(backButton);
 
-        // 아이콘/이미지 표시 영역
+        // 아이콘/이미지 표시
         JLabel iconLabel = new JLabel();
         iconLabel.setBounds(70, 80, 230, 250);
         iconLabel.setOpaque(true);
@@ -187,7 +186,7 @@ public class ItemDetailFrame extends JFrame {
         }
         contentPanel.add(iconLabel);
 
-        // 상태 라벨 (대여 가능/불가)
+        // 상태 라벨
         JLabel statusLabel = new JLabel(status.equals("available") ? "대여 가능" : "대여 불가");
         statusLabel.setFont(uiFont.deriveFont(Font.BOLD, 15f));
         statusLabel.setForeground(BROWN);
@@ -198,35 +197,32 @@ public class ItemDetailFrame extends JFrame {
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         contentPanel.add(statusLabel);
 
-        // 물품명
+        // 물품 정보 텍스트
         JLabel nameLabel = new JLabel(itemName);
         nameLabel.setFont(uiFont.deriveFont(Font.BOLD, 40f));
         nameLabel.setForeground(Color.BLACK);
         nameLabel.setBounds(330, 145, 450, 50);
         contentPanel.add(nameLabel);
 
-        // 재고
         JLabel stockLabel = new JLabel("남은 재고 : " + stock + "개");
         stockLabel.setFont(uiFont.deriveFont(20f));
         stockLabel.setForeground(new Color(80, 80, 80));
         stockLabel.setBounds(330, 210, 400, 30);
         contentPanel.add(stockLabel);
 
-        // 대여 가능 일수
         JLabel daysLabel = new JLabel("대여 가능 일 수 : " + rentDays + "일");
         daysLabel.setFont(uiFont.deriveFont(20f));
         daysLabel.setForeground(new Color(80, 80, 80));
         daysLabel.setBounds(330, 245, 400, 30);
         contentPanel.add(daysLabel);
 
-        // 대상 학과
         JLabel majorLabel = new JLabel("대상 학과 : " + restrictedMajor);
         majorLabel.setFont(uiFont.deriveFont(20f));
         majorLabel.setForeground(new Color(80, 80, 80));
         majorLabel.setBounds(330, 280, 400, 30);
         contentPanel.add(majorLabel);
 
-        // [수정됨] 대여 버튼 및 로직
+        // 🟢 [핵심] 대여 버튼 로직 (연동 및 제한 기능 포함)
         if (status.equals("available") && stock > 0) {
             JButton rentButton = new JButton("대여하기");
             rentButton.setFont(uiFont.deriveFont(Font.BOLD, 20f));
@@ -238,37 +234,40 @@ public class ItemDetailFrame extends JFrame {
             rentButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
             
             rentButton.addActionListener(e -> {
-                // 1. 이미 이 화면에서 대여 처리가 되었는지 (중복 클릭 방지)
+                // 1. 이미 이 화면에서 대여를 눌렀는지 확인
                 if (isRented) {
                     showSimplePopup("알림", "이미 대여중입니다.");
                     return;
                 }
 
-                // 2. [신규] 연체 패널티 확인 (정지 기간이 남았는지)
+                // 2. 연체 패널티 확인 (PenaltyManager)
                 long banDays = PenaltyManager.getRentalBanDaysRemaining(userId);
                 if (banDays > 0) {
                     showSimplePopup("대여 불가", "연체 패널티로 인해\n" + banDays + "일 동안 대여할 수 없습니다.");
                     return;
                 }
 
-                // 3. [신규] 최대 대여 개수(2개) 확인
+                // 3. 1인당 최대 2개 대여 제한 확인
                 int currentCount = PenaltyManager.getCurrentRentalCount(userId);
                 if (currentCount >= 2) {
                     showSimplePopup("대여 불가", "물품은 최대 2개까지만\n동시 대여 가능합니다.");
                     return;
                 }
 
-                // 4. 대여 성공 처리
+                // 4. [중요] ItemManager를 통해 실제 데이터의 재고 차감 (파일 저장됨)
+                ItemManager.decreaseStock(itemName);
+                
+                // 5. 화면 갱신 및 상태 변경
                 stock--;
                 stockLabel.setText("남은 재고 : " + stock + "개");
                 isRented = true;
                 
-                // [신규] 대여 카운트 증가
+                // 대여 개수 증가 처리
                 PenaltyManager.increaseRentalCount(userId);
 
                 showSimplePopup("성공", "대여가 완료되었습니다.\n(현재 대여 중: " + (currentCount + 1) + "개)");
 
-                // 재고 소진 시 버튼 숨기기 및 상태 변경
+                // 재고 소진 시 UI 변경
                 if (stock == 0) {
                     rentButton.setVisible(false);
                     statusLabel.setText("대여 불가");
@@ -288,6 +287,7 @@ public class ItemDetailFrame extends JFrame {
         return "📦"; 
     }
 
+    // --- 팝업 디자인 ---
     private void showSimplePopup(String title, String message) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setSize(400, 250);
@@ -336,7 +336,6 @@ public class ItemDetailFrame extends JFrame {
         dialog.setVisible(true);
     }
 
-    // 로그아웃 팝업
     private void showLogoutPopup() {
         JDialog dialog = new JDialog(this, "로그아웃", true);
         dialog.setUndecorated(true);
@@ -408,7 +407,7 @@ public class ItemDetailFrame extends JFrame {
                 public void mouseClicked(MouseEvent e) {
                     if (text.equals("물품대여")) {
                         new ItemListFrame(); dispose();
-                    } else if (text.equals("과행사")) {
+                    } else if (text.equals("과행사")) { // 간식행사 -> 과행사로 수정됨
                         new EventListFrame(); dispose();
                     } else if (text.equals("빈 강의실")) {
                         new EmptyClassFrame(); dispose();
@@ -416,6 +415,8 @@ public class ItemDetailFrame extends JFrame {
                         new SpaceRentFrame(); dispose();
                     } else if (text.equals("마이페이지")) {
                         new MyPageFrame(); dispose();
+                    } else if (text.equals("커뮤니티")) {
+                        new CommunityFrame(); dispose();
                     } else {
                         showSimplePopup("알림", "[" + text + "] 화면은 준비 중입니다.");
                     }
@@ -425,7 +426,6 @@ public class ItemDetailFrame extends JFrame {
         return btn;
     }
 
-    // 둥근 테두리 클래스
     private static class RoundedBorder implements Border {
         private int radius;
         private Color color;
@@ -444,9 +444,23 @@ public class ItemDetailFrame extends JFrame {
         }
     }
 
+    // [수정] 메인 메소드에서도 ItemManager 사용하도록 변경
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() ->
-            new ItemDetailFrame("C타입 충전기", 3, "available", "1", "전체 학과", null)
-        );
+        SwingUtilities.invokeLater(() -> {
+            List<ItemManager.Item> items = ItemManager.getAllItems();
+            if (!items.isEmpty()) {
+                ItemManager.Item item = items.get(0);
+                new ItemDetailFrame(
+                    item.name, 
+                    item.stock, 
+                    item.stock > 0 ? "available" : "unavailable", 
+                    String.valueOf(item.rentDays), 
+                    item.targetMajor, 
+                    item.imagePath
+                );
+            } else {
+                new ItemDetailFrame("테스트 물품", 5, "available", "3", "전체 학과", null);
+            }
+        });
     }
 }
