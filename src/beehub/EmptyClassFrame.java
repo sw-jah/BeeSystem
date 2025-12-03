@@ -17,11 +17,11 @@ import java.util.Vector;
 public class EmptyClassFrame extends JFrame {
 
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
-    private static final Color NAV_BG = new Color(255, 255, 255); // [추가]
+    private static final Color NAV_BG = new Color(255, 255, 255);
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BROWN = new Color(89, 60, 28);
-    private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157); // [추가]
-    private static final Color POPUP_BG = new Color(255, 250, 205); // [추가]
+    private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
+    private static final Color POPUP_BG = new Color(255, 250, 205);
     private static final Color BORDER_COLOR = new Color(220, 220, 220);
 
     private static Font uiFont;
@@ -37,10 +37,13 @@ public class EmptyClassFrame extends JFrame {
     private JTable roomTable;
     private List<ClassRoom> allRooms = new ArrayList<>();
     
-    // UI 컴포넌트 (검색용)
+    // UI 컴포넌트
     private JComboBox<Integer> monthCombo, dayCombo;
     private JComboBox<String> buildingCombo, timeCombo;
     private JButton searchBtn;
+    
+    // [추가] 결과 없음 안내 라벨
+    private JLabel noDataLabel;
 
     public EmptyClassFrame() {
         setTitle("서울여대 꿀단지 - 빈 강의실 찾기");
@@ -82,7 +85,6 @@ public class EmptyClassFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
         
-        // 유저 정보 표시
         User user = UserManager.getCurrentUser();
         String info = (user != null) ? "[" + user.getName() + "]님" : "[게스트]님";
         
@@ -189,7 +191,22 @@ public class EmptyClassFrame extends JFrame {
         scroll.setBounds(25, 100, 750, 340);
         scroll.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
         scroll.getViewport().setBackground(Color.WHITE);
+        
+        // 세련된 스크롤바 적용
+        scroll.getVerticalScrollBar().setUI(new ModernScrollBarUI());
+        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+
         contentPanel.add(scroll);
+
+        // [추가] 결과 없음 라벨 (테이블 위에 겹쳐서 표시)
+        noDataLabel = new JLabel("", SwingConstants.CENTER);
+        noDataLabel.setFont(uiFont.deriveFont(20f));
+        noDataLabel.setForeground(new Color(150, 150, 150));
+        // 테이블 헤더(40px)를 제외한 바디 영역에 위치하도록 y좌표 조정 (100 + 40 = 140)
+        noDataLabel.setBounds(25, 140, 750, 300); 
+        noDataLabel.setVisible(false);
+        // contentPanel에 가장 먼저(Index 0) 추가하여 맨 위에 그려지도록 함
+        contentPanel.add(noDataLabel, 0);
 
         // 자동 조회
         searchRooms();
@@ -220,36 +237,46 @@ public class EmptyClassFrame extends JFrame {
         }
 
         if (!found) {
+            // [수정] 팝업 대신 화면 내 텍스트 표시
             String target = selectedBuilding.equals("전체") ? "모든 건물" : selectedBuilding;
-            showSimplePopup("검색 결과 없음", target + " " + selectedHour + "시에는\n사용 가능한 강의실이 없습니다.");
+            noDataLabel.setText("사용 가능한 강의실이 없습니다.");
+            noDataLabel.setVisible(true);
+        } else {
+            noDataLabel.setVisible(false);
         }
     }
 
     // --- 헬퍼 메서드들 ---
     
-    private void showSimplePopup(String title, String message) {
-        JDialog dialog = new JDialog(this, title, true);
-        dialog.setUndecorated(true);
-        dialog.setBackground(new Color(0,0,0,0));
-        dialog.setSize(400, 250);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = createPopupPanel();
-        panel.setLayout(null);
-        dialog.add(panel);
-
-        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
-        msgLabel.setFont(uiFont.deriveFont(16f));
-        msgLabel.setForeground(BROWN);
-        msgLabel.setBounds(20, 80, 360, 30);
-        panel.add(msgLabel);
-
-        JButton okBtn = createPopupBtn("확인");
-        okBtn.setBounds(135, 160, 130, 45);
-        okBtn.addActionListener(e -> dialog.dispose());
-        panel.add(okBtn);
-
-        dialog.setVisible(true);
+    // [추가] ModernScrollBarUI 이너 클래스
+    private static class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            this.thumbColor = new Color(200, 200, 200);
+            this.trackColor = new Color(245, 245, 245);
+        }
+        @Override
+        protected JButton createDecreaseButton(int orientation) { return createZeroButton(); }
+        @Override
+        protected JButton createIncreaseButton(int orientation) { return createZeroButton(); }
+        private JButton createZeroButton() {
+            JButton btn = new JButton();
+            btn.setPreferredSize(new Dimension(0, 0));
+            return btn;
+        }
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+            if (!c.isEnabled()) return;
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(thumbColor);
+            g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 8, 8);
+        }
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+            g.setColor(trackColor);
+            g.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+        }
     }
     
     private void showLogoutPopup() {
@@ -312,6 +339,31 @@ public class EmptyClassFrame extends JFrame {
             });
         }
         return btn;
+    }
+    
+    private void showSimplePopup(String title, String message) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = createPopupPanel();
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel msgLabel = new JLabel(message, SwingConstants.CENTER);
+        msgLabel.setFont(uiFont.deriveFont(16f));
+        msgLabel.setForeground(BROWN);
+        msgLabel.setBounds(20, 80, 360, 30);
+        panel.add(msgLabel);
+
+        JButton okBtn = createPopupBtn("확인");
+        okBtn.setBounds(135, 160, 130, 45);
+        okBtn.addActionListener(e -> dialog.dispose());
+        panel.add(okBtn);
+
+        dialog.setVisible(true);
     }
 
     private JLabel createLabel(String text) {

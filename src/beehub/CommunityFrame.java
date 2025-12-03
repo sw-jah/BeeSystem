@@ -9,8 +9,8 @@ import javax.swing.table.JTableHeader;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
 import java.io.InputStream;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ public class CommunityFrame extends JFrame {
     private static final Color BROWN = new Color(89, 60, 28);
     private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
     private static final Color BORDER_COLOR = new Color(220, 220, 220);
-    private static final Color POPUP_BG = new Color(255, 250, 205); // 팝업 배경색
+    private static final Color POPUP_BG = new Color(255, 250, 205); 
 
     private static Font uiFont;
     private ImageIcon heartIcon; 
@@ -35,17 +35,11 @@ public class CommunityFrame extends JFrame {
     private String userId = "";
     private int userPoint = 0;
 
-    // 폰트 로드 및 등록
     static {
         try {
             InputStream is = CommunityFrame.class.getResourceAsStream("/fonts/DNFBitBitv2.ttf");
             if (is == null) {
-                File f = new File("resource/fonts/DNFBitBitv2.ttf");
-                if (f.exists()) {
-                    uiFont = Font.createFont(Font.TRUETYPE_FONT, f).deriveFont(14f);
-                } else {
-                    uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
-                }
+                uiFont = new Font("맑은 고딕", Font.PLAIN, 14);
             } else {
                 uiFont = Font.createFont(Font.TRUETYPE_FONT, is).deriveFont(14f);
             }
@@ -55,7 +49,6 @@ public class CommunityFrame extends JFrame {
             uiFont = new Font("SansSerif", Font.PLAIN, 14);
         }
     }
-
     
     // UI 컴포넌트
     private JTextField searchField;
@@ -70,7 +63,7 @@ public class CommunityFrame extends JFrame {
     private final int itemsPerPage = 8; 
 
     public CommunityFrame() {
-    	setTitle("서울여대 꿀단지 - 공간대여");
+        setTitle("서울여대 꿀단지 - 커뮤니티");
         setSize(850, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -84,55 +77,39 @@ public class CommunityFrame extends JFrame {
             userId = currentUser.getId();
             userPoint = currentUser.getPoints();
         }
-
+        
+        loadImages(); 
         initHeader();
         initNav();
         initContent();
 
-        setVisible(true);    }
+        setVisible(true);    
+    }
     
-    // [수정] 새 Post를 목록에 추가하고 UI를 새로고침하는 공개 메서드
     public void addPost(Post newPost) {
-        // 새 글의 No를 현재 목록의 최대 No + 1로 설정 (내림차순 정렬을 위해)
         int maxNo = allPosts.isEmpty() ? 0 : allPosts.stream().mapToInt(p -> p.no).max().orElse(0);
         newPost.no = maxNo + 1;
         
-        allPosts.add(0, newPost); // 가장 위에 추가
-        searchPosts(); // 필터링/검색 로직을 다시 실행하고 renderTable()을 호출하여 목록을 새로고침
+        allPosts.add(0, newPost); 
+        searchPosts(); 
     }
     
-    // [추가] 게시글을 삭제하고 목록을 새로고침하는 메서드
     public void deletePost(Post postToDelete) {
-        // Post 객체는 equals/hashCode를 오버라이드하지 않았으므로, 참조 비교로 삭제 가능
         allPosts.remove(postToDelete);
-        searchPosts(); // 목록 새로고침
+        searchPosts(); 
     }
 
     private void loadImages() {
         try {
-            ImageIcon origin = new ImageIcon("resource/img/heart.png");
-            if (origin.getIconWidth() > 0) {
-                Image img = origin.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH);
-                heartIcon = new ImageIcon(img);
+            URL heartUrl = getClass().getResource("/img/heart.png");
+            if (heartUrl != null) {
+                ImageIcon origin = new ImageIcon(heartUrl);
+                if (origin.getIconWidth() > 0) {
+                    Image img = origin.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH);
+                    heartIcon = new ImageIcon(img);
+                }
             }
         } catch (Exception e) {}
-    }
-    
-    
-
-    private void initDummyData() {
-        LocalDate today = LocalDate.now();
-        for (int i = 1; i <= 30; i++) {
-            String date = today.minusDays(i).toString();
-            // 모든 게시글의 초기 댓글 수를 최소 1개(첫 댓글) 이상으로 설정
-            int initialComments = 1; 
-            if (i == 1) {
-                // 더미 데이터의 no는 역순으로 30부터 1까지 할당
-                allPosts.add(new Post(30, "제가 쓴 글입니다 (테스트)", "사용자", today.toString(), 0, initialComments, "내용"));
-            } else {
-                allPosts.add(new Post(30 - i + 1, "게시글 테스트 " + i, "글쓴이" + i, date, i * 2, initialComments + (i % 3), "내용입니다."));
-            }
-        }
     }
 
     private void initHeader() {
@@ -162,7 +139,6 @@ public class CommunityFrame extends JFrame {
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
            
-        // [수정] 로그아웃 팝업 호출
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) { 
                 showLogoutPopup(); 
@@ -199,7 +175,7 @@ public class CommunityFrame extends JFrame {
         topContainer.setBackground(BG_MAIN);
         topContainer.setOpaque(false);
 
-        // 검색 패널 (왼쪽)
+        // 검색 패널
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
         searchPanel.setBackground(Color.WHITE);
         searchPanel.setBorder(new RoundedBorder(15, BORDER_COLOR, 2));
@@ -211,6 +187,9 @@ public class CommunityFrame extends JFrame {
             BorderFactory.createEmptyBorder(2, 5, 2, 5)
         ));
         searchField.setPreferredSize(new Dimension(220, 35));
+        
+        // [수정] 엔터키 리스너 추가
+        searchField.addActionListener(e -> searchPosts());
 
         JButton searchBtn = createStyledButton("검색", 70, 35);
         searchBtn.setBackground(Color.WHITE);
@@ -221,7 +200,7 @@ public class CommunityFrame extends JFrame {
         searchPanel.add(searchField);
         searchPanel.add(searchBtn);
 
-        // 글쓰기 버튼 패널 (오른쪽)
+        // 글쓰기 버튼 패널
         JPanel writePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
         writePanel.setOpaque(false);
         
@@ -229,7 +208,6 @@ public class CommunityFrame extends JFrame {
         writeBtn.setBackground(Color.WHITE); 
         writeBtn.setForeground(BROWN);
         
-        // [수정] CommunityWriteFrame을 열고 현재 프레임(this)을 전달
         writeBtn.addActionListener(e -> {
             new CommunityWriteFrame(userName, this);
         });
@@ -251,19 +229,17 @@ public class CommunityFrame extends JFrame {
         postTable = new JTable(tableModel);
         styleTable(postTable);
         
-        // 컬럼 너비
         postTable.getColumnModel().getColumn(0).setPreferredWidth(450); 
         postTable.getColumnModel().getColumn(1).setPreferredWidth(100); 
         postTable.getColumnModel().getColumn(2).setPreferredWidth(120); 
         postTable.getColumnModel().getColumn(3).setPreferredWidth(80);  
 
-        // 렌더러 적용 
         postTable.getColumnModel().getColumn(0).setCellRenderer(new TitleCommentRenderer()); 
         if (heartIcon != null) {
             postTable.getColumnModel().getColumn(3).setCellRenderer(new IconTextRenderer(heartIcon)); 
         }
 
-        // 상세 페이지 이동 이벤트
+        // 상세 페이지 이동
         postTable.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
@@ -273,14 +249,12 @@ public class CommunityFrame extends JFrame {
                         Post selectedPost = filteredPosts.get(row); 
                         
                         if (selectedPost != null) {
-                            // [수정] 부모 CommunityFrame 객체(this)를 DetailFrame에 전달
                             CommunityDetailFrame detailFrame = new CommunityDetailFrame(selectedPost, heartIcon, userName, CommunityFrame.this); 
                             
-                            // 상세 프레임이 닫힐 때 목록을 새로고침하도록 WindowListener를 추가
                             detailFrame.addWindowListener(new WindowAdapter() {
                                 @Override
                                 public void windowClosed(WindowEvent e) {
-                                    searchPosts(); // 상세 프레임이 닫힌 후 목록을 새로고침
+                                    searchPosts(); 
                                 }
                             });
                         }
@@ -294,7 +268,6 @@ public class CommunityFrame extends JFrame {
         scrollPane.setBorder(BorderFactory.createLineBorder(BORDER_COLOR));
         scrollPane.getViewport().setBackground(Color.WHITE);
         
-        // 스크롤바 디자인 적용
         scrollPane.getVerticalScrollBar().setUI(new ModernScrollBarUI());
         scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -324,7 +297,6 @@ public class CommunityFrame extends JFrame {
                 .collect(Collectors.toList());
         }
         
-        // 내림차순 정렬 (최신 글이 위로)
         filteredPosts.sort((p1, p2) -> Integer.compare(p2.no, p1.no));
 
         currentPage = 1;
@@ -357,7 +329,6 @@ public class CommunityFrame extends JFrame {
         if (calcPages == 0) calcPages = 1;
         final int totalPages = calcPages; 
 
-        // < 이전
         JButton prevBtn = createPageButton("<", false);
         prevBtn.addActionListener(e -> {
             if (currentPage > 1) {
@@ -367,7 +338,6 @@ public class CommunityFrame extends JFrame {
         });
         pagePanel.add(prevBtn);
 
-        // 숫자
         for (int i = 1; i <= totalPages; i++) {
             JButton numBtn = createPageButton(String.valueOf(i), i == currentPage);
             final int pageNum = i;
@@ -378,7 +348,6 @@ public class CommunityFrame extends JFrame {
             pagePanel.add(numBtn);
         }
 
-        // > 다음
         JButton nextBtn = createPageButton(">", false);
         nextBtn.addActionListener(e -> {
             if (currentPage < totalPages) {
@@ -411,7 +380,6 @@ public class CommunityFrame extends JFrame {
         return null;
     }
     
-    // [추가] 로그아웃 팝업 메서드 (MainFrame 스타일 참고)
     private void showLogoutPopup() {
         JDialog dialog = new JDialog(this, "로그아웃", true);
         dialog.setUndecorated(true);
@@ -433,7 +401,6 @@ public class CommunityFrame extends JFrame {
         yesBtn.setBounds(60, 150, 120, 45);
         yesBtn.addActionListener(e -> {
             dialog.dispose();
-            // new LoginFrame(); // LoginFrame이 정의되어 있다면 주석 해제
             dispose();
         });
         panel.add(yesBtn);
@@ -446,7 +413,6 @@ public class CommunityFrame extends JFrame {
         dialog.setVisible(true);
     }
     
-    // [추가] 팝업 스타일 메서드
     private JPanel createPopupPanel() {
         return new JPanel() {
             @Override
@@ -462,7 +428,6 @@ public class CommunityFrame extends JFrame {
         };
     }
     
-    // [추가] 팝업 버튼 스타일 메서드
     private JButton createPopupBtn(String text) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -524,7 +489,6 @@ public class CommunityFrame extends JFrame {
                 TitleWithCommentCount tc = (TitleWithCommentCount) value;
                 titleLabel.setText(tc.title);
                 
-                // 댓글 수가 1 이상이면 표시합니다. (첫 댓글 포함)
                 if (tc.commentCount > 0) {
                     countLabel.setText("[" + tc.commentCount + "]");
                 } else {

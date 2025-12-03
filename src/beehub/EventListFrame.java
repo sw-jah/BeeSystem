@@ -34,7 +34,6 @@ public class EventListFrame extends JFrame {
     private int userPoint = 100;
     private JComboBox<String> councilDropdown;
     private JPanel eventListPanel;
-    private String selectedCouncil = "전체"; 
 
     private final String[] councils = {
         "전체", "총학생회", "───────────────",
@@ -61,7 +60,7 @@ public class EventListFrame extends JFrame {
         getContentPane().setBackground(BG_MAIN);
 
         initUI();
-        loadEvents();
+        loadEvents(); // 초기 로딩 (전체 목록)
         setVisible(true);
     }
 
@@ -77,7 +76,6 @@ public class EventListFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        // [수정] 이모지 제거
         JLabel jarIcon = new JLabel();
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
@@ -141,20 +139,15 @@ public class EventListFrame extends JFrame {
             }
         });
         
-        councilDropdown.addActionListener(e -> {
-            String selected = (String) councilDropdown.getSelectedItem();
-            if (!selected.startsWith("───")) {
-                selectedCouncil = selected;
-                loadEvents();
-            }
-        });
+        // [중요] 드롭다운 변경 시 자동 로딩(ActionListener) 제거함.
+        // 이제 돋보기 버튼을 눌러야만 loadEvents()가 실행됩니다.
         contentPanel.add(councilDropdown);
 
-        // [수정] 이모지 -> 텍스트
-        JLabel searchIcon = new JLabel("검색");
-        searchIcon.setFont(uiFont.deriveFont(Font.BOLD, 16f));
+        // [수정] 돋보기 아이콘 (클릭 시 검색)
+        JLabel searchIcon = new JLabel("🔍");
+        searchIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
         searchIcon.setForeground(BROWN);
-        searchIcon.setBounds(330, 65, 40, 30);
+        searchIcon.setBounds(330, 62, 30, 30);
         searchIcon.setCursor(new Cursor(Cursor.HAND_CURSOR));
         searchIcon.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) { loadEvents(); }
@@ -178,17 +171,31 @@ public class EventListFrame extends JFrame {
     }
 
     private void loadEvents() {
+        // [중요] 검색 버튼을 누른 시점의 드롭다운 값을 가져옴
+        String selectedCouncil = (String) councilDropdown.getSelectedItem();
+        if (selectedCouncil == null || selectedCouncil.startsWith("───")) {
+            selectedCouncil = "전체"; // 구분선 선택 시 전체로 처리
+        }
+
         eventListPanel.removeAll();
         List<EventData> events = EventManager.getAllEvents();
 
         int yPos = 10;
+        int count = 0;
+
         for (EventData event : events) {
+            // [중요] 필터링 로직: "전체"가 아니면 학과명 일치 여부 확인
+            if (!selectedCouncil.equals("전체") && !event.targetDept.equals(selectedCouncil)) {
+                continue;
+            }
+
             addEventCard(event, yPos);
             yPos += 140;
+            count++;
         }
 
-        if (yPos == 10) {
-            JLabel noResult = new JLabel("등록된 행사가 없습니다.", SwingConstants.CENTER);
+        if (count == 0) {
+            JLabel noResult = new JLabel("해당하는 행사가 없습니다.", SwingConstants.CENTER);
             noResult.setFont(uiFont.deriveFont(20f));
             noResult.setForeground(new Color(150, 150, 150));
             noResult.setBounds(0, 100, 750, 50);

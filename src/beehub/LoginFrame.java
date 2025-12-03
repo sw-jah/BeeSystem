@@ -2,14 +2,12 @@ package beehub;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-// [중요] 텍스트 스타일링 및 정렬을 위해 추가된 임포트
 import javax.swing.text.*; 
-
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
+import java.net.URL; // URL 클래스 추가
 
-// [중요] 다른 패키지의 프레임 임포트
 import admin.AdminMainFrame;
 import council.CouncilMainFrame;
 
@@ -24,12 +22,13 @@ public class LoginFrame extends JFrame {
     private static final Color GRAY = new Color(200, 200, 200);
 
     // ===============================
-    // 🔤 폰트 설정
+    // 🔤 폰트 설정 (리소스 로드 방식 통일)
     // ===============================
     private static Font uiFont;
 
     static {
         try {
+            // [수정] 클래스패스 리소스 로딩 방식 사용
             InputStream is = LoginFrame.class.getResourceAsStream("/fonts/DNFBitBitv2.ttf");
             if (is == null) {
                 uiFont = new Font("맑은 고딕", Font.BOLD, 12);
@@ -48,11 +47,9 @@ public class LoginFrame extends JFrame {
     private CardLayout cardLayout;
     private JPanel containerPanel;
     
-    // 사용자용 필드
     private JTextField hakbunField;
     private JPasswordField pwField;
     
-    // 관리자용 필드
     private JTextField adminIdField;
     private JPasswordField adminPwField;
 
@@ -81,16 +78,17 @@ public class LoginFrame extends JFrame {
         JPanel panel = createBackgroundPanel();
         panel.setLayout(null);
 
-        // 벌 아이콘
+        // [수정] 이미지 로딩 방식 통일 (getResource 사용)
         JLabel beeIcon = new JLabel();
-        String imgPath = "resource/img/login-bee.png"; 
-        ImageIcon originalIcon = new ImageIcon(imgPath);
-
-        if (originalIcon.getIconWidth() > 0) {
+        URL imgUrl = getClass().getResource("/img/login-bee.png");
+        
+        if (imgUrl != null) {
+            ImageIcon originalIcon = new ImageIcon(imgUrl);
             Image img = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
             beeIcon.setIcon(new ImageIcon(img));
             beeIcon.setBounds(380, 20, 100, 100); 
         } else {
+            // 이미지가 없을 경우 대체 텍스트
             beeIcon.setText("🐝");
             beeIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 60));
             beeIcon.setBounds(400, 30, 80, 80);
@@ -189,10 +187,12 @@ public class LoginFrame extends JFrame {
         JPanel panel = createBackgroundPanel();
         panel.setLayout(null);
 
+        // [수정] 이미지 로딩 방식 통일 (getResource 사용)
         JLabel beeIcon = new JLabel();
-        String imgPath = "resource/img/login-bee.png"; 
-        ImageIcon originalIcon = new ImageIcon(imgPath);
-        if (originalIcon.getIconWidth() > 0) {
+        URL imgUrl = getClass().getResource("/img/login-bee.png");
+
+        if (imgUrl != null) {
+            ImageIcon originalIcon = new ImageIcon(imgUrl);
             Image img = originalIcon.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH);
             beeIcon.setIcon(new ImageIcon(img));
             beeIcon.setBounds(410, 10, 70, 70);
@@ -270,7 +270,7 @@ public class LoginFrame extends JFrame {
         UserDAO dao = new UserDAO();
         if (dao.checkUserLogin(id, pw)) {
             showCustomDialog(id + "님 환영합니다!", false);
-            new MainFrame(); // 일반 사용자 메인으로
+            new MainFrame(); 
             dispose();
         } else {
             showCustomDialog("로그인 실패\n아이디 또는 비밀번호를 확인하세요.", false);
@@ -288,7 +288,6 @@ public class LoginFrame extends JFrame {
 
         UserDAO dao = new UserDAO();
         
-        // 1. 총 관리자 체크
         if (dao.checkAdminLogin(id, pw)) {
             showCustomDialog("총 관리자님 환영합니다!", false);
             new admin.AdminMainFrame(); 
@@ -296,7 +295,6 @@ public class LoginFrame extends JFrame {
             return;
         } 
         
-        // 2. 학생회 체크 (정보 받아오기)
         UserDAO.CouncilInfo council = dao.getCouncilInfo(id, pw);
         if (council != null) {
             showCustomDialog(council.name + "님 환영합니다!", false);
@@ -309,7 +307,7 @@ public class LoginFrame extends JFrame {
     }
 
     // ===============================================================
-    // 🎨 예쁜 커스텀 팝업창 (중앙 정렬 적용 완료)
+    // 🎨 예쁜 커스텀 팝업창
     // ===============================================================
     private void showCustomDialog(String message, boolean goBackToLogin) {
         JDialog dialog = new JDialog(this, "알림", true);
@@ -333,13 +331,11 @@ public class LoginFrame extends JFrame {
         panel.setLayout(null);
         dialog.add(panel);
 
-        // [수정] 텍스트를 담을 투명 패널 (GridBagLayout 사용 -> 수직/수평 중앙 정렬)
         JPanel textPanel = new JPanel(new GridBagLayout());
         textPanel.setOpaque(false);
         textPanel.setBounds(30, 40, 340, 110); 
         panel.add(textPanel);
 
-        // [수정] JTextPane을 사용하여 텍스트 자체 중앙 정렬
         JTextPane msgPane = new JTextPane();
         msgPane.setText(message);
         msgPane.setFont(uiFont.deriveFont(20f));
@@ -348,13 +344,11 @@ public class LoginFrame extends JFrame {
         msgPane.setEditable(false);
         msgPane.setFocusable(false);
         
-        // 문단 스타일 설정 (가로 중앙 정렬)
         StyledDocument doc = msgPane.getStyledDocument();
         SimpleAttributeSet center = new SimpleAttributeSet();
         StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
         doc.setParagraphAttributes(0, doc.getLength(), center, false);
 
-        // 패널에 추가 (GridBagLayout이 자동으로 상하좌우 중앙에 배치함)
         textPanel.add(msgPane);
 
         JButton okBtn = createStyledButton("확인");

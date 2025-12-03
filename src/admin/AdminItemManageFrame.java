@@ -4,8 +4,9 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
 import java.io.InputStream;
+import java.net.URL; // URL 추가
 import java.util.List;
-import beehub.ItemManager; // [중요] ItemManager 사용
+import beehub.ItemManager; 
 import beehub.ItemManager.Item;
 
 public class AdminItemManageFrame extends JFrame {
@@ -35,7 +36,7 @@ public class AdminItemManageFrame extends JFrame {
         getContentPane().setBackground(BG_MAIN);
 
         initUI();
-        refreshList(); // 시작 시 목록 불러오기
+        refreshList(); 
         setVisible(true);
     }
 
@@ -76,12 +77,16 @@ public class AdminItemManageFrame extends JFrame {
         scroll.setBounds(30, 150, 730, 400);
         scroll.setBorder(null);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
+        
+        // [수정] 세련된 스크롤바 UI 적용
+        scroll.getVerticalScrollBar().setUI(new ModernScrollBarUI());
+        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0));
+        
         add(scroll);
     }
 
     public void refreshList() {
         itemListPanel.removeAll();
-        // [중요] Manager에서 리스트 가져옴
         List<Item> items = ItemManager.getAllItems();
         int y = 0;
 
@@ -107,13 +112,31 @@ public class AdminItemManageFrame extends JFrame {
         icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         icon.setBounds(15, 15, 70, 70);
         icon.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        if(item.imagePath != null) {
+        
+        // [수정] 안전한 이미지 로딩
+        boolean imgLoaded = false;
+        if(item.imagePath != null && !item.imagePath.isEmpty()) {
             try {
-                ImageIcon ii = new ImageIcon(item.imagePath);
-                icon.setIcon(new ImageIcon(ii.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH)));
-                icon.setText("");
-            } catch(Exception e) { /* 이미지 로드 실패 시 이모지 유지 */ }
+                URL url = getClass().getResource(item.imagePath.startsWith("/") ? item.imagePath : "/" + item.imagePath);
+                if (url == null) {
+                    ImageIcon ii = new ImageIcon(item.imagePath);
+                    if (ii.getIconWidth() > 0) {
+                        icon.setIcon(new ImageIcon(ii.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH)));
+                        icon.setText("");
+                        imgLoaded = true;
+                    }
+                } else {
+                    ImageIcon ii = new ImageIcon(url);
+                    icon.setIcon(new ImageIcon(ii.getImage().getScaledInstance(70, 70, Image.SCALE_SMOOTH)));
+                    icon.setText("");
+                    imgLoaded = true;
+                }
+            } catch(Exception e) { }
         }
+        if (!imgLoaded) {
+             icon.setText("📦");
+        }
+        
         p.add(icon);
 
         JLabel name = new JLabel(item.name);
@@ -146,7 +169,6 @@ public class AdminItemManageFrame extends JFrame {
         del.addActionListener(e -> {
             boolean confirm = showConfirmPopup("삭제 확인", "정말 [" + item.name + "] 항목을\n삭제하시겠습니까?");
             if(confirm) {
-                // [중요] Manager를 통해 삭제 (파일 저장됨)
                 ItemManager.deleteItem(index);
                 refreshList();
             }
@@ -156,7 +178,6 @@ public class AdminItemManageFrame extends JFrame {
         return p;
     }
 
-    // 🎨 이쁜 팝업
     private boolean showConfirmPopup(String title, String msg) {
         JDialog dialog = new JDialog(this, title, true);
         dialog.setUndecorated(true);
@@ -206,6 +227,37 @@ public class AdminItemManageFrame extends JFrame {
 
         dialog.setVisible(true);
         return res[0];
+    }
+
+    // [추가] ModernScrollBarUI
+    private static class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            this.thumbColor = new Color(200, 200, 200);
+            this.trackColor = new Color(245, 245, 245);
+        }
+        @Override
+        protected JButton createDecreaseButton(int orientation) { return createZeroButton(); }
+        @Override
+        protected JButton createIncreaseButton(int orientation) { return createZeroButton(); }
+        private JButton createZeroButton() {
+            JButton btn = new JButton();
+            btn.setPreferredSize(new Dimension(0, 0));
+            return btn;
+        }
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+            if (!c.isEnabled()) return;
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(thumbColor);
+            g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 8, 8);
+        }
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+            g.setColor(trackColor);
+            g.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+        }
     }
 
     private static class RoundedBorder implements Border {

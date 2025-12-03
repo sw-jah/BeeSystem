@@ -5,8 +5,9 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
-import beehub.ItemManager.Item; // [중요] ItemManager 사용
+import beehub.ItemManager.Item; 
 
 public class ItemListFrame extends JFrame {
 
@@ -48,7 +49,7 @@ public class ItemListFrame extends JFrame {
         getContentPane().setBackground(BG_MAIN);
 
         initUI();
-        loadItems(); // [중요] 매니저에서 데이터 로드
+        loadItems(); 
 
         setVisible(true);
     }
@@ -110,6 +111,7 @@ public class ItemListFrame extends JFrame {
             BorderFactory.createLineBorder(new Color(200, 200, 200), 2),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
+        searchField.addActionListener(e -> searchItems()); // 엔터키 리스너
         contentPanel.add(searchField);
 
         JLabel searchIcon = new JLabel("🔍");
@@ -129,12 +131,16 @@ public class ItemListFrame extends JFrame {
         scrollPane.setBounds(25, 80, 750, 370);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        
+        // [수정] 세련된 스크롤바 UI 적용
+        scrollPane.getVerticalScrollBar().setUI(new ModernScrollBarUI());
+        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(8, 0)); // 스크롤바 너비 조절
+
         contentPanel.add(scrollPane);
     }
 
     private void loadItems() {
         itemListPanel.removeAll();
-        // [수정] ItemManager에서 모든 아이템 가져오기
         List<Item> items = ItemManager.getAllItems();
         int yPos = 10;
         
@@ -150,7 +156,7 @@ public class ItemListFrame extends JFrame {
 
     private void searchItems() {
         String keyword = searchField.getText().trim();
-        List<Item> allItems = ItemManager.getAllItems(); // [수정] 검색 시에도 Manager 데이터 사용
+        List<Item> allItems = ItemManager.getAllItems();
         
         itemListPanel.removeAll();
         int yPos = 10;
@@ -190,22 +196,32 @@ public class ItemListFrame extends JFrame {
         iconLabel.setBorder(new RoundedBorder(10, new Color(220, 220, 220), 1));
         iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
         
-        if (item.imagePath != null) {
+        boolean imgLoaded = false;
+        if (item.imagePath != null && !item.imagePath.isEmpty()) {
             try {
-                ImageIcon icon = new ImageIcon(item.imagePath);
-                Image img = icon.getImage().getScaledInstance(65, 65, Image.SCALE_SMOOTH);
-                iconLabel.setIcon(new ImageIcon(img));
-            } catch (Exception e) {
-                iconLabel.setText("📦");
-                iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-            }
-        } else {
+                URL url = getClass().getResource(item.imagePath.startsWith("/") ? item.imagePath : "/" + item.imagePath);
+                if (url == null) {
+                    ImageIcon icon = new ImageIcon(item.imagePath);
+                    if (icon.getIconWidth() > 0) {
+                        Image img = icon.getImage().getScaledInstance(65, 65, Image.SCALE_SMOOTH);
+                        iconLabel.setIcon(new ImageIcon(img));
+                        imgLoaded = true;
+                    }
+                } else {
+                    ImageIcon icon = new ImageIcon(url);
+                    Image img = icon.getImage().getScaledInstance(65, 65, Image.SCALE_SMOOTH);
+                    iconLabel.setIcon(new ImageIcon(img));
+                    imgLoaded = true;
+                }
+            } catch (Exception e) {}
+        }
+        
+        if (!imgLoaded) {
             iconLabel.setText("📦");
             iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
         }
         card.add(iconLabel);
 
-        // 재고에 따른 상태 표시
         String statusText = (item.stock > 0) ? "대여 가능" : "대여 불가";
         Color statusColor = (item.stock > 0) ? GREEN_AVAILABLE : RED_UNAVAILABLE;
 
@@ -233,7 +249,6 @@ public class ItemListFrame extends JFrame {
         card.setCursor(new Cursor(Cursor.HAND_CURSOR));
         card.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                // [중요] 상세 페이지로 데이터 전달
                 new ItemDetailFrame(item.name, item.stock, 
                     item.stock > 0 ? "available" : "unavailable", 
                     String.valueOf(item.rentDays), item.targetMajor, item.imagePath);
@@ -246,7 +261,6 @@ public class ItemListFrame extends JFrame {
         itemListPanel.add(card);
     }
 
-    // --- 팝업 및 네비게이션 ---
     private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
@@ -316,7 +330,6 @@ public class ItemListFrame extends JFrame {
     }
     
     private void showLogoutPopup() {
-        // (로그아웃 팝업 코드는 이전과 동일)
         JDialog dialog = new JDialog(this, "로그아웃", true);
         dialog.setUndecorated(true);
         dialog.setBackground(new Color(0,0,0,0));
@@ -360,6 +373,37 @@ public class ItemListFrame extends JFrame {
         panel.add(no);
         
         dialog.setVisible(true);
+    }
+
+    // [추가] ModernScrollBarUI 이너 클래스
+    private static class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            this.thumbColor = new Color(200, 200, 200);
+            this.trackColor = new Color(245, 245, 245);
+        }
+        @Override
+        protected JButton createDecreaseButton(int orientation) { return createZeroButton(); }
+        @Override
+        protected JButton createIncreaseButton(int orientation) { return createZeroButton(); }
+        private JButton createZeroButton() {
+            JButton btn = new JButton();
+            btn.setPreferredSize(new Dimension(0, 0));
+            return btn;
+        }
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+            if (!c.isEnabled()) return;
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(thumbColor);
+            g2.fillRoundRect(thumbBounds.x, thumbBounds.y, thumbBounds.width, thumbBounds.height, 8, 8);
+        }
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+            g.setColor(trackColor);
+            g.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+        }
     }
 
     private static class RoundedBorder implements Border {
