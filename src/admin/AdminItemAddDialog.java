@@ -13,6 +13,7 @@ public class AdminItemAddDialog extends JDialog {
     private static final Color BG_YELLOW = new Color(255, 250, 205);
     private static final Color BROWN = new Color(139, 90, 43);
     private static final Color GRAY = new Color(200, 200, 200);
+    private static final Color POPUP_BG = new Color(255, 250, 205);
     
     private static Font uiFont;
     static {
@@ -25,10 +26,7 @@ public class AdminItemAddDialog extends JDialog {
 
     private AdminItemManageFrame parent;
     private AdminItemManageFrame.ItemData currentItem; 
-    
-    // 선택된 이미지 경로를 저장할 변수
     private String selectedImagePath = null;
-
     private JTextField nameField;
     private JSpinner stockSpinner, daySpinner;
     private JLabel imagePreview;
@@ -46,7 +44,6 @@ public class AdminItemAddDialog extends JDialog {
 
         initUI();
         if (item != null) loadData(item);
-        
         setVisible(true);
     }
 
@@ -69,19 +66,13 @@ public class AdminItemAddDialog extends JDialog {
         uploadBtn.setBounds(140, 100, 100, 30);
         uploadBtn.setBackground(Color.WHITE);
         uploadBtn.setForeground(BROWN);
-        
         uploadBtn.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
             if(chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File file = chooser.getSelectedFile();
-                
-                // 경로 저장
                 selectedImagePath = file.getAbsolutePath();
-                
-                // 미리보기 설정
                 ImageIcon icon = new ImageIcon(selectedImagePath);
                 Image img = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-                
                 imagePreview.setIcon(new ImageIcon(img));
                 imagePreview.setText(""); 
             }
@@ -187,8 +178,6 @@ public class AdminItemAddDialog extends JDialog {
         nameField.setText(item.name);
         stockSpinner.setValue(item.stock);
         daySpinner.setValue(item.rentDays);
-        
-        // 수정 시 기존 이미지 불러오기
         if (item.imagePath != null) {
             selectedImagePath = item.imagePath;
             ImageIcon icon = new ImageIcon(selectedImagePath);
@@ -201,7 +190,7 @@ public class AdminItemAddDialog extends JDialog {
     private void saveData() {
         String name = nameField.getText().trim();
         if(name.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "물품명을 입력해주세요.");
+            showMsgPopup("알림", "물품명을 입력해주세요.");
             return;
         }
         int stock = (int) stockSpinner.getValue();
@@ -220,17 +209,56 @@ public class AdminItemAddDialog extends JDialog {
         if(majors.isEmpty()) majors = "대상 없음";
 
         if(currentItem == null) {
-            // 등록: selectedImagePath 전달
             parent.addItem(new AdminItemManageFrame.ItemData(name, stock, days, majors, selectedImagePath));
         } else {
-            // 수정: 값 업데이트
             currentItem.name = name;
             currentItem.stock = stock;
             currentItem.rentDays = days;
             currentItem.targetMajor = majors;
-            currentItem.imagePath = selectedImagePath; // 이미지 경로 업데이트
+            currentItem.imagePath = selectedImagePath;
             parent.refreshList();
         }
         dispose();
+    }
+
+    // 🎨 이쁜 팝업
+    private void showMsgPopup(String title, String msg) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setBackground(new Color(0,0,0,0));
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel l = new JLabel(msg, SwingConstants.CENTER);
+        l.setFont(uiFont.deriveFont(18f));
+        l.setForeground(BROWN);
+        l.setBounds(20, 80, 360, 30);
+        panel.add(l);
+
+        JButton okBtn = new JButton("확인");
+        okBtn.setFont(uiFont.deriveFont(16f));
+        okBtn.setBackground(BROWN);
+        okBtn.setForeground(Color.WHITE);
+        okBtn.setBounds(135, 170, 130, 45);
+        okBtn.setFocusPainted(false);
+        okBtn.addActionListener(e -> dialog.dispose());
+        panel.add(okBtn);
+
+        dialog.setVisible(true);
     }
 }

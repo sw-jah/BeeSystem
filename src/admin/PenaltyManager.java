@@ -1,16 +1,92 @@
-package admin; // 패키지명 확인
+package admin;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
 public class PenaltyManager {
-    // 💾 메모리에 임시 저장 (DB 대신 사용)
+    // ==========================================
+    // 🏢 공간 대여(Space) 관련 데이터
+    // ==========================================
     // 아이디 : 경고 횟수
     private static Map<String, Integer> warningCounts = new HashMap<>();
-    
-    // 아이디 : 정지 해제 날짜
+    // 아이디 : 공간 대여 정지 해제 날짜
     private static Map<String, LocalDate> banEndDates = new HashMap<>();
+
+    // ==========================================
+    // 📦 물품 대여(Item) 관련 데이터
+    // ==========================================
+    // 아이디 : 물품 대여 정지 해제 날짜 (연체 패널티)
+    private static Map<String, LocalDate> rentalBanEndDates = new HashMap<>();
+    // 아이디 : 현재 대여 중인 물품 개수
+    private static Map<String, Integer> currentRentalCounts = new HashMap<>();
+
+
+    // ==========================================
+    // [신규] 물품 대여 관련 메소드
+    // ==========================================
+
+    /**
+     * 🚨 물품 연체 패널티 부여 (관리자 반납 처리 시 호출)
+     * @param userId 학번
+     * @param overdueDays 연체된 일수 (이 기간만큼 대여 정지)
+     */
+    public static void setRentalBan(String userId, long overdueDays) {
+        if (overdueDays <= 0) return;
+
+        LocalDate releaseDate = LocalDate.now().plusDays(overdueDays);
+        rentalBanEndDates.put(userId, releaseDate);
+        System.out.println("[시스템] " + userId + "님은 연체로 인해 " + releaseDate + "까지 대여가 금지됩니다.");
+    }
+
+    /**
+     * 🚫 대여 정지 남은 일수 확인
+     * @return 0이면 대여 가능, 1 이상이면 남은 정지 일수
+     */
+    public static long getRentalBanDaysRemaining(String userId) {
+        if (!rentalBanEndDates.containsKey(userId)) return 0;
+
+        LocalDate banUntil = rentalBanEndDates.get(userId);
+        LocalDate today = LocalDate.now();
+
+        if (today.isAfter(banUntil)) {
+            rentalBanEndDates.remove(userId); // 기한 지났으면 해제
+            return 0;
+        }
+
+        // 남은 일수 계산 (오늘부터 정지 해제일까지)
+        return ChronoUnit.DAYS.between(today, banUntil);
+    }
+
+    /**
+     * 📦 현재 대여 중인 물품 개수 증가 (대여 시)
+     */
+    public static void increaseRentalCount(String userId) {
+        currentRentalCounts.put(userId, currentRentalCounts.getOrDefault(userId, 0) + 1);
+    }
+
+    /**
+     * 📦 현재 대여 중인 물품 개수 감소 (반납 시)
+     */
+    public static void decreaseRentalCount(String userId) {
+        int count = currentRentalCounts.getOrDefault(userId, 0);
+        if (count > 0) {
+            currentRentalCounts.put(userId, count - 1);
+        }
+    }
+
+    /**
+     * 🔢 현재 대여 중인 개수 조회
+     */
+    public static int getCurrentRentalCount(String userId) {
+        return currentRentalCounts.getOrDefault(userId, 0);
+    }
+
+
+    // ==========================================
+    // [기존] 공간 대여 경고 관련 메소드
+    // ==========================================
 
     /**
      * 🚨 경고 부여 (관리자가 '미입실 취소' 누를 때 호출)
@@ -59,8 +135,8 @@ public class PenaltyManager {
     public static LocalDate getBanDate(String userId) {
         return banEndDates.get(userId);
     }
-    
-    // 현재 경고 횟수 (관리자 화면 표시용)
+
+    // ⚠️ 현재 경고 횟수 (관리자 화면 표시용) - [이 부분이 누락되어 에러 발생했음]
     public static int getWarningCount(String userId) {
         return warningCounts.getOrDefault(userId, 0);
     }

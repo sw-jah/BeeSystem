@@ -5,9 +5,13 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
+import admin.PenaltyManager; // [추가] 패널티 매니저 임포트
 
 public class ItemDetailFrame extends JFrame {
 
+    // ===============================
+    // 🎨 컬러 테마 & 폰트
+    // ===============================
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color NAV_BG = new Color(255, 255, 255);
     private static final Color BG_MAIN = new Color(255, 255, 255);
@@ -34,11 +38,16 @@ public class ItemDetailFrame extends JFrame {
         }
     }
 
-    // [수정] 사용자 변수
+    // ===============================
+    // 👤 사용자 정보
+    // ===============================
     private String userName = "사용자";
     private String userId = "";
     private int userPoint = 100;
 
+    // ===============================
+    // 📦 물품 정보
+    // ===============================
     private String itemName;
     private int stock;
     private String status;
@@ -58,11 +67,15 @@ public class ItemDetailFrame extends JFrame {
 
         setTitle("서울여대 꿀단지 - " + itemName);
         setSize(800, 600);
+        
+        // 현재 로그인한 사용자 정보 가져오기
         User currentUser = UserManager.getCurrentUser();
         if(currentUser != null) {
             userName = currentUser.getName();
             userId = currentUser.getId();
-            userPoint = currentUser.getPoints();}
+            userPoint = currentUser.getPoints();
+        }
+        
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(null);
@@ -74,6 +87,7 @@ public class ItemDetailFrame extends JFrame {
     }
 
     private void initUI() {
+        // --- 헤더 영역 ---
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(null);
         headerPanel.setBounds(0, 0, 800, 80);
@@ -91,7 +105,7 @@ public class ItemDetailFrame extends JFrame {
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);
 
-        // [수정] 프로필 아이콘 제거
+        // 상단 사용자 정보 패널
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
@@ -101,7 +115,7 @@ public class ItemDetailFrame extends JFrame {
         userInfoText.setForeground(BROWN);
         userInfoText.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // [수정] 로그아웃 연결
+        // 로그아웃 클릭 이벤트
         userInfoText.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
                 showLogoutPopup();
@@ -111,6 +125,7 @@ public class ItemDetailFrame extends JFrame {
         userInfoPanel.add(userInfoText);
         headerPanel.add(userInfoPanel);
 
+        // --- 네비게이션 바 ---
         JPanel navPanel = new JPanel();
         navPanel.setLayout(new GridLayout(1, 6));
         navPanel.setBounds(0, 80, 800, 50);
@@ -124,12 +139,14 @@ public class ItemDetailFrame extends JFrame {
             navPanel.add(menuBtn);
         }
 
+        // --- 메인 컨텐츠 영역 ---
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(null);
         contentPanel.setBounds(0, 130, 800, 470);
         contentPanel.setBackground(BG_MAIN);
         add(contentPanel);
 
+        // 이전 화면 버튼
         JButton backButton = new JButton("이전 화면");
         backButton.setFont(uiFont.deriveFont(14f));
         backButton.setForeground(Color.WHITE);
@@ -144,6 +161,7 @@ public class ItemDetailFrame extends JFrame {
         });
         contentPanel.add(backButton);
 
+        // 아이콘/이미지 표시 영역
         JLabel iconLabel = new JLabel();
         iconLabel.setBounds(70, 80, 230, 250);
         iconLabel.setOpaque(true);
@@ -167,9 +185,9 @@ public class ItemDetailFrame extends JFrame {
             iconLabel.setText(getEmojiForItem(itemName));
             iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 120));
         }
-
         contentPanel.add(iconLabel);
 
+        // 상태 라벨 (대여 가능/불가)
         JLabel statusLabel = new JLabel(status.equals("available") ? "대여 가능" : "대여 불가");
         statusLabel.setFont(uiFont.deriveFont(Font.BOLD, 15f));
         statusLabel.setForeground(BROWN);
@@ -180,30 +198,35 @@ public class ItemDetailFrame extends JFrame {
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         contentPanel.add(statusLabel);
 
+        // 물품명
         JLabel nameLabel = new JLabel(itemName);
         nameLabel.setFont(uiFont.deriveFont(Font.BOLD, 40f));
         nameLabel.setForeground(Color.BLACK);
         nameLabel.setBounds(330, 145, 450, 50);
         contentPanel.add(nameLabel);
 
+        // 재고
         JLabel stockLabel = new JLabel("남은 재고 : " + stock + "개");
         stockLabel.setFont(uiFont.deriveFont(20f));
         stockLabel.setForeground(new Color(80, 80, 80));
         stockLabel.setBounds(330, 210, 400, 30);
         contentPanel.add(stockLabel);
 
+        // 대여 가능 일수
         JLabel daysLabel = new JLabel("대여 가능 일 수 : " + rentDays + "일");
         daysLabel.setFont(uiFont.deriveFont(20f));
         daysLabel.setForeground(new Color(80, 80, 80));
         daysLabel.setBounds(330, 245, 400, 30);
         contentPanel.add(daysLabel);
 
+        // 대상 학과
         JLabel majorLabel = new JLabel("대상 학과 : " + restrictedMajor);
         majorLabel.setFont(uiFont.deriveFont(20f));
         majorLabel.setForeground(new Color(80, 80, 80));
         majorLabel.setBounds(330, 280, 400, 30);
         contentPanel.add(majorLabel);
 
+        // [수정됨] 대여 버튼 및 로직
         if (status.equals("available") && stock > 0) {
             JButton rentButton = new JButton("대여하기");
             rentButton.setFont(uiFont.deriveFont(Font.BOLD, 20f));
@@ -213,20 +236,43 @@ public class ItemDetailFrame extends JFrame {
             rentButton.setFocusPainted(false);
             rentButton.setBorderPainted(false);
             rentButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            
             rentButton.addActionListener(e -> {
+                // 1. 이미 이 화면에서 대여 처리가 되었는지 (중복 클릭 방지)
                 if (isRented) {
                     showSimplePopup("알림", "이미 대여중입니다.");
-                } else {
-                    stock--;
-                    stockLabel.setText("남은 재고 : " + stock + "개");
-                    isRented = true;
-                    showSimplePopup("성공", "대여가 완료되었습니다.");
+                    return;
+                }
 
-                    if (stock == 0) {
-                        rentButton.setVisible(false);
-                        statusLabel.setText("대여 불가");
-                        statusLabel.setBackground(RED_UNAVAILABLE);
-                    }
+                // 2. [신규] 연체 패널티 확인 (정지 기간이 남았는지)
+                long banDays = PenaltyManager.getRentalBanDaysRemaining(userId);
+                if (banDays > 0) {
+                    showSimplePopup("대여 불가", "연체 패널티로 인해\n" + banDays + "일 동안 대여할 수 없습니다.");
+                    return;
+                }
+
+                // 3. [신규] 최대 대여 개수(2개) 확인
+                int currentCount = PenaltyManager.getCurrentRentalCount(userId);
+                if (currentCount >= 2) {
+                    showSimplePopup("대여 불가", "물품은 최대 2개까지만\n동시 대여 가능합니다.");
+                    return;
+                }
+
+                // 4. 대여 성공 처리
+                stock--;
+                stockLabel.setText("남은 재고 : " + stock + "개");
+                isRented = true;
+                
+                // [신규] 대여 카운트 증가
+                PenaltyManager.increaseRentalCount(userId);
+
+                showSimplePopup("성공", "대여가 완료되었습니다.\n(현재 대여 중: " + (currentCount + 1) + "개)");
+
+                // 재고 소진 시 버튼 숨기기 및 상태 변경
+                if (stock == 0) {
+                    rentButton.setVisible(false);
+                    statusLabel.setText("대여 불가");
+                    statusLabel.setBackground(RED_UNAVAILABLE);
                 }
             });
             contentPanel.add(rentButton);
@@ -290,7 +336,7 @@ public class ItemDetailFrame extends JFrame {
         dialog.setVisible(true);
     }
 
-    // [수정] 로그아웃 팝업
+    // 로그아웃 팝업
     private void showLogoutPopup() {
         JDialog dialog = new JDialog(this, "로그아웃", true);
         dialog.setUndecorated(true);
@@ -379,6 +425,7 @@ public class ItemDetailFrame extends JFrame {
         return btn;
     }
 
+    // 둥근 테두리 클래스
     private static class RoundedBorder implements Border {
         private int radius;
         private Color color;

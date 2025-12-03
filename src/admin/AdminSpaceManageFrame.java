@@ -5,7 +5,7 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.io.InputStream;
 import java.time.LocalDate;
-import java.time.LocalDateTime; // 시간 계산을 위해 필요
+import java.time.LocalDateTime; 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -17,6 +17,7 @@ public class AdminSpaceManageFrame extends JFrame {
     private static final Color BROWN = new Color(139, 90, 43);
     private static final Color RED_CANCEL = new Color(255, 100, 100);
     private static final Color GRAY_TEXT = new Color(150, 150, 150);
+    private static final Color POPUP_BG = new Color(255, 250, 205);
 
     private static Font uiFont;
     static {
@@ -40,15 +41,8 @@ public class AdminSpaceManageFrame extends JFrame {
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        // --- 테스트 데이터 초기화 ---
-        
-        // 1. 미래 예약 (내일) -> 아직 시간 안 됨 (취소 불가)
         reserveList.add(new SpaceData("스터디룸 A", "20231234", "김슈니", LocalDate.now().plusDays(1), LocalTime.of(14, 0), LocalTime.of(16, 0), 4, "예약중"));
-        
-        // 2. 이미 지난 예약 (20분 전 시작) -> 10분 지남 (취소 가능)
         reserveList.add(new SpaceData("세미나실 B", "20210001", "이멋사", LocalDate.now(), LocalTime.now().minusMinutes(20), LocalTime.now().plusHours(1), 6, "예약중"));
-        
-        // [추가된 예시] 3. 방금 시작한 예약 (5분 전 시작) -> 10분 안 지남 (취소 시도 시 거부되어야 함)
         reserveList.add(new SpaceData("세미나실 C", "20240099", "이빠름", LocalDate.now(), LocalTime.now().minusMinutes(5), LocalTime.now().plusHours(2), 4, "예약중"));
 
         initUI();
@@ -121,7 +115,6 @@ public class AdminSpaceManageFrame extends JFrame {
         roomLabel.setBounds(20, 15, 200, 30);
         panel.add(roomLabel);
 
-        // 현재 경고 횟수 표시
         int warn = PenaltyManager.getWarningCount(data.userId);
         String statusText = data.status;
         if(warn > 0) statusText += " (경고 " + warn + "회)";
@@ -159,38 +152,31 @@ public class AdminSpaceManageFrame extends JFrame {
             cancelBtn.setForeground(Color.WHITE);
             cancelBtn.setBorder(new RoundedBorder(10, RED_CANCEL));
             
-            // [핵심 로직 수정] 시간 체크 후 미입실 취소
+            // [수정] 이쁜 팝업 적용
             cancelBtn.addActionListener(e -> {
-                // 1. 현재 시간과 입장 가능 시간 계산
-                LocalDateTime now = LocalDateTime.now(); // 현재 시간
-                LocalDateTime reserveStart = LocalDateTime.of(data.date, data.startTime); // 예약 시작 시간
-                LocalDateTime cancelAllowedTime = reserveStart.plusMinutes(10); // 시작 후 10분
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime reserveStart = LocalDateTime.of(data.date, data.startTime);
+                LocalDateTime cancelAllowedTime = reserveStart.plusMinutes(10);
 
-                // 2. 시간이 10분 지났는지 확인
                 if (now.isBefore(cancelAllowedTime)) {
-                    // 아직 10분이 안 지났으면 경고창 띄우고 중단
                     String msg = "아직 미입실 처리를 할 수 없습니다.\n" +
-                                 "입장 시간 10분 후 (" + cancelAllowedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + ") 부터 취소 가능합니다.";
-                    JOptionPane.showMessageDialog(this, msg, "취소 불가", JOptionPane.WARNING_MESSAGE);
+                                 "입장 시간 10분 후 (" + cancelAllowedTime.format(DateTimeFormatter.ofPattern("HH:mm")) + ") 부터\n취소 가능합니다.";
+                    showMsgPopup("취소 불가", msg);
                     return; 
                 }
 
-                // 3. 10분이 지났다면 정상적으로 취소 진행
-                int result = JOptionPane.showConfirmDialog(this, 
-                    "[" + data.userName + "]님 미입실로 '예약 취소' 처리하시겠습니까?\n(누적 시 패널티 부여)", 
-                    "패널티 부여 확인", JOptionPane.YES_NO_OPTION);
+                boolean confirm = showConfirmPopup("패널티 부여", 
+                    "[" + data.userName + "]님 미입실로 취소하시겠습니까?\n(누적 시 패널티 부여)");
                 
-                if (result == JOptionPane.YES_OPTION) {
+                if (confirm) {
                     data.status = "취소됨";
                     PenaltyManager.addWarning(data.userId);
                     
                     if(PenaltyManager.isBanned(data.userId)) {
-                        JOptionPane.showMessageDialog(this, 
-                            "🚫 경고 2회 누적!\n해당 회원은 7일간 예약이 정지되었습니다.");
+                        showMsgPopup("예약 정지", "🚫 경고 2회 누적!\n해당 회원은 7일간 예약이 정지되었습니다.");
                     } else {
                         int currentWarn = PenaltyManager.getWarningCount(data.userId);
-                        JOptionPane.showMessageDialog(this, 
-                            "경고가 부여되었습니다.\n(현재 누적: " + currentWarn + "회)");
+                        showMsgPopup("경고 부여", "경고가 부여되었습니다.\n(현재 누적: " + currentWarn + "회)");
                     }
                     
                     refreshList();
@@ -206,7 +192,111 @@ public class AdminSpaceManageFrame extends JFrame {
         return panel;
     }
 
-    // 데이터 클래스
+    // ==========================================
+    // 🎨 이쁜 팝업 메소드
+    // ==========================================
+    private void showMsgPopup(String title, String msg) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setBackground(new Color(0,0,0,0));
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        String[] lines = msg.split("\n");
+        int yPos = lines.length == 1 ? 80 : 60;
+        for(String line : lines) {
+            JLabel l = new JLabel(line, SwingConstants.CENTER);
+            l.setFont(uiFont.deriveFont(18f));
+            l.setForeground(BROWN);
+            l.setBounds(20, yPos, 360, 30);
+            panel.add(l);
+            yPos += 30;
+        }
+
+        JButton okBtn = new JButton("확인");
+        okBtn.setFont(uiFont.deriveFont(16f));
+        okBtn.setBackground(BROWN);
+        okBtn.setForeground(Color.WHITE);
+        okBtn.setBounds(135, 170, 130, 45);
+        okBtn.setBorder(new RoundedBorder(15, BROWN));
+        okBtn.setFocusPainted(false);
+        okBtn.addActionListener(e -> dialog.dispose());
+        panel.add(okBtn);
+
+        dialog.setVisible(true);
+    }
+
+    private boolean showConfirmPopup(String title, String msg) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setBackground(new Color(0,0,0,0));
+        final boolean[] result = {false};
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        String[] lines = msg.split("\n");
+        int yPos = lines.length == 1 ? 80 : 60;
+        for (String line : lines) {
+            JLabel l = new JLabel(line, SwingConstants.CENTER);
+            l.setFont(uiFont.deriveFont(18f));
+            l.setForeground(BROWN);
+            l.setBounds(20, yPos, 360, 30);
+            panel.add(l);
+            yPos += 30;
+        }
+
+        JButton yesBtn = new JButton("네");
+        yesBtn.setBounds(60, 160, 120, 45);
+        yesBtn.setBackground(BROWN);
+        yesBtn.setForeground(Color.WHITE);
+        yesBtn.setFont(uiFont.deriveFont(16f));
+        yesBtn.setBorder(new RoundedBorder(15, BROWN));
+        yesBtn.addActionListener(e -> { result[0] = true; dialog.dispose(); });
+        panel.add(yesBtn);
+
+        JButton noBtn = new JButton("아니오");
+        noBtn.setBounds(220, 160, 120, 45);
+        noBtn.setBackground(BROWN);
+        noBtn.setForeground(Color.WHITE);
+        noBtn.setFont(uiFont.deriveFont(16f));
+        noBtn.setBorder(new RoundedBorder(15, BROWN));
+        noBtn.addActionListener(e -> { result[0] = false; dialog.dispose(); });
+        panel.add(noBtn);
+
+        dialog.setVisible(true);
+        return result[0];
+    }
+
     class SpaceData {
         String roomName; String userId; String userName;
         LocalDate date; LocalTime startTime; LocalTime endTime;

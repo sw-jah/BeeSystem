@@ -12,6 +12,7 @@ public class AdminItemManageFrame extends JFrame {
     private static final Color HEADER_YELLOW = new Color(255, 238, 140);
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BROWN = new Color(139, 90, 43);
+    private static final Color POPUP_BG = new Color(255, 250, 205); // 팝업 배경색
     
     private static Font uiFont;
     static {
@@ -23,7 +24,6 @@ public class AdminItemManageFrame extends JFrame {
     }
 
     private JPanel itemListPanel;
-    // 물품 데이터 저장 리스트
     private ArrayList<ItemData> itemList = new ArrayList<>();
 
     public AdminItemManageFrame() {
@@ -34,7 +34,7 @@ public class AdminItemManageFrame extends JFrame {
         setLayout(null);
         getContentPane().setBackground(BG_MAIN);
 
-        // 테스트 데이터 (기존 데이터 예시)
+        // 테스트 데이터
         itemList.add(new ItemData("C타입 충전기", 3, 1, "전체 학과", null));
         itemList.add(new ItemData("노트북", 5, 3, "소프트웨어융합학과", null));
 
@@ -76,9 +76,7 @@ public class AdminItemManageFrame extends JFrame {
         addBtn.setBounds(630, 100, 130, 40);
         addBtn.setBorder(new RoundedBorder(15, BROWN));
         addBtn.setFocusPainted(false);
-        addBtn.addActionListener(e -> {
-            new AdminItemAddDialog(this, null); 
-        });
+        addBtn.addActionListener(e -> new AdminItemAddDialog(this, null));
         add(addBtn);
 
         itemListPanel = new JPanel();
@@ -115,7 +113,6 @@ public class AdminItemManageFrame extends JFrame {
         panel.setBackground(Color.WHITE);
         panel.setBorder(new RoundedBorder(15, Color.LIGHT_GRAY));
 
-        // 이미지 표시 부분
         JLabel imgLabel = new JLabel();
         imgLabel.setBounds(15, 15, 70, 70);
         imgLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
@@ -155,9 +152,7 @@ public class AdminItemManageFrame extends JFrame {
         editBtn.setForeground(BROWN);
         editBtn.setBounds(530, 30, 70, 40);
         editBtn.setBorder(new RoundedBorder(10, BROWN));
-        editBtn.addActionListener(e -> {
-            new AdminItemAddDialog(this, item); 
-        });
+        editBtn.addActionListener(e -> new AdminItemAddDialog(this, item));
         panel.add(editBtn);
 
         JButton delBtn = new JButton("삭제");
@@ -167,10 +162,9 @@ public class AdminItemManageFrame extends JFrame {
         delBtn.setBounds(610, 30, 70, 40);
         delBtn.setBorder(new RoundedBorder(10, new Color(200, 50, 50)));
         delBtn.addActionListener(e -> {
-            int result = JOptionPane.showConfirmDialog(this, 
-                "정말 [" + item.name + "] 항목을 삭제하시겠습니까?", 
-                "삭제 확인", JOptionPane.YES_NO_OPTION);
-            if(result == JOptionPane.YES_OPTION) {
+            // [수정] 이쁜 팝업으로 변경
+            boolean confirm = showConfirmPopup("삭제 확인", "정말 [" + item.name + "] 항목을\n삭제하시겠습니까?");
+            if(confirm) {
                 itemList.remove(index);
                 refreshList();
             }
@@ -184,15 +178,72 @@ public class AdminItemManageFrame extends JFrame {
         itemList.add(newItem);
         refreshList();
     }
+
+    // ==========================================
+    // 🎨 이쁜 팝업 메소드 (공통 사용)
+    // ==========================================
+    private boolean showConfirmPopup(String title, String msg) {
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setUndecorated(true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setBackground(new Color(0,0,0,0));
+
+        final boolean[] result = {false};
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(POPUP_BG);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(BROWN);
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        String[] lines = msg.split("\n");
+        int yPos = lines.length == 1 ? 80 : 60;
+        for (String line : lines) {
+            JLabel l = new JLabel(line, SwingConstants.CENTER);
+            l.setFont(uiFont.deriveFont(18f));
+            l.setForeground(BROWN);
+            l.setBounds(20, yPos, 360, 30);
+            panel.add(l);
+            yPos += 30;
+        }
+
+        JButton yesBtn = new JButton("네");
+        yesBtn.setBounds(60, 160, 120, 45);
+        yesBtn.setBackground(BROWN);
+        yesBtn.setForeground(Color.WHITE);
+        yesBtn.setFont(uiFont.deriveFont(16f));
+        yesBtn.setBorder(new RoundedBorder(15, BROWN));
+        yesBtn.setFocusPainted(false);
+        yesBtn.addActionListener(e -> { result[0] = true; dialog.dispose(); });
+        panel.add(yesBtn);
+
+        JButton noBtn = new JButton("아니오");
+        noBtn.setBounds(220, 160, 120, 45);
+        noBtn.setBackground(BROWN);
+        noBtn.setForeground(Color.WHITE);
+        noBtn.setFont(uiFont.deriveFont(16f));
+        noBtn.setBorder(new RoundedBorder(15, BROWN));
+        noBtn.setFocusPainted(false);
+        noBtn.addActionListener(e -> { result[0] = false; dialog.dispose(); });
+        panel.add(noBtn);
+
+        dialog.setVisible(true);
+        return result[0];
+    }
     
     // 데이터 클래스
     public static class ItemData {
-        String name;
-        int stock;
-        int rentDays;
-        String targetMajor;
-        String imagePath; // 이미지 경로
-
+        String name; int stock; int rentDays; String targetMajor; String imagePath;
         public ItemData(String n, int s, int r, String t, String i) {
             name = n; stock = s; rentDays = r; targetMajor = t; imagePath = i;
         }

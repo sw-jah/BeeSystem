@@ -114,7 +114,8 @@ public class MainFrame extends JFrame {
      beeIcon.setBounds(50, 30, 50, 50); // 위치 및 크기 설정
      contentPanel.add(beeIcon);
 
-        JLabel notiTitle = new JLabel("일정 알리비");
+        JLabel notiTitle = new JLabel("일정 알리비"
+        		+ "");
         notiTitle.setFont(uiFont.deriveFont(24f));
         notiTitle.setForeground(BROWN);
         notiTitle.setBounds(110, 40, 200, 30);
@@ -298,6 +299,6 @@ public class MainFrame extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(MainFrame::new);
+        SwingUtilities.invokeLater(LoginFrame::new);
     }
 }
