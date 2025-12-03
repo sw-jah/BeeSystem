@@ -101,7 +101,7 @@ public class ItemDetailFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        JLabel jarIcon = new JLabel("🍯");
+        JLabel jarIcon = new JLabel("");
         jarIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 30));
         jarIcon.setBounds(310, 25, 40, 40);
         headerPanel.add(jarIcon);

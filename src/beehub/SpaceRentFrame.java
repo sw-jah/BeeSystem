@@ -276,7 +276,7 @@ public class SpaceRentFrame extends JFrame {
 
         JPanel row = new JPanel(new GridLayout(1, 2, 5, 0));
         row.setBackground(Color.WHITE);
-        row.setMaximumSize(new Dimension(340, 35));
+        row.setMaximumSize(new Dimension(340, 40));
         row.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
 
         JTextField nameField = new JTextField("이름");
