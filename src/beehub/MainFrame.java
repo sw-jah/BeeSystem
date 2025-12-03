@@ -33,6 +33,14 @@ public class MainFrame extends JFrame {
     private JLabel notiText2;
 
     public MainFrame() {
+        // [수정] 보안 체크: 로그인하지 않은 상태라면 로그인 창으로 강제 이동
+        if (UserManager.getCurrentUser() == null) {
+            JOptionPane.showMessageDialog(null, "로그인이 필요한 서비스입니다.\n로그인 화면으로 이동합니다.", "알림", JOptionPane.WARNING_MESSAGE);
+            new LoginFrame();
+            dispose(); // 현재(MainFrame) 창 닫기
+            return;    // 생성자 로직 중단
+        }
+
         setTitle("서울여대 꿀단지 - 메인");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -58,9 +66,7 @@ public class MainFrame extends JFrame {
         logoLabel.setBounds(30, 20, 300, 40);
         headerPanel.add(logoLabel);
 
-        
-
-        // [수정] 사용자 정보 & 로그아웃 (DB 연동, 보유 꿀 제거)
+        // [수정] 사용자 정보 & 로그아웃 (DB 연동)
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
         userInfoPanel.setBounds(400, 0, 380, 80);
         userInfoPanel.setOpaque(false);
@@ -105,17 +111,16 @@ public class MainFrame extends JFrame {
 
         ImageIcon originalIcon = new ImageIcon(MainFrame.class.getResource("/img/login-bee.png"));
 
-     // 이미지를 50x50 크기로 부드럽게 조절
-     Image img = originalIcon.getImage();
-     Image scaledImg = img.getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-     ImageIcon scaledIcon = new ImageIcon(scaledImg);
+        // 이미지를 50x50 크기로 부드럽게 조절
+        Image img = originalIcon.getImage();
+        Image scaledImg = img.getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+        ImageIcon scaledIcon = new ImageIcon(scaledImg);
 
-     JLabel beeIcon = new JLabel(scaledIcon);
-     beeIcon.setBounds(50, 30, 50, 50); // 위치 및 크기 설정
-     contentPanel.add(beeIcon);
+        JLabel beeIcon = new JLabel(scaledIcon);
+        beeIcon.setBounds(50, 30, 50, 50); // 위치 및 크기 설정
+        contentPanel.add(beeIcon);
 
-        JLabel notiTitle = new JLabel("일정 알리비"
-        		+ "");
+        JLabel notiTitle = new JLabel("일정 알리비");
         notiTitle.setFont(uiFont.deriveFont(24f));
         notiTitle.setForeground(BROWN);
         notiTitle.setBounds(110, 40, 200, 30);
@@ -298,7 +303,7 @@ public class MainFrame extends JFrame {
         }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(LoginFrame::new);
-    }
+    // [중요] MainFrame에는 main 메소드를 제거했습니다.
+    // 프로그램을 실행할 때는 반드시 LoginFrame.java를 실행(Run)해주세요.
+    // 만약 실수로 MainFrame을 new하더라도 생성자 상단의 체크 로직이 LoginFrame을 띄워줍니다.
 }

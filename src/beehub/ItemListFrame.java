@@ -344,6 +344,7 @@ public class ItemListFrame extends JFrame {
         panel.add(l);
         
         JButton yes = new JButton("네");
+        yes.setFont(uiFont);
         yes.setBounds(60, 150, 120, 45);
         yes.setBackground(BROWN);
         yes.setForeground(Color.WHITE);
@@ -351,6 +352,7 @@ public class ItemListFrame extends JFrame {
         panel.add(yes);
         
         JButton no = new JButton("아니오");
+        no.setFont(uiFont);
         no.setBounds(220, 150, 120, 45);
         no.setBackground(BROWN);
         no.setForeground(Color.WHITE);

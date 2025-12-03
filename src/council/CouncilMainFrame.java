@@ -57,14 +57,18 @@ public class CouncilMainFrame extends JFrame {
         titleLabel.setForeground(BROWN);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
+        // [수정] 로그아웃 버튼 위치 조정을 위한 패널 설정
+        // 수직 여백(vgap)을 45로 설정하여 버튼을 아래로 내림
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 25));
+        btnPanel.setOpaque(false);
+
         JButton logoutBtn = createStyledButton("로그아웃", BROWN);
         logoutBtn.setPreferredSize(new Dimension(100, 40));
         logoutBtn.addActionListener(e -> {
             new LoginFrame();
             dispose();
         });
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnPanel.setOpaque(false);
+        
         btnPanel.add(logoutBtn);
         headerPanel.add(btnPanel, BorderLayout.EAST);
 
@@ -152,7 +156,6 @@ public class CouncilMainFrame extends JFrame {
         title.setForeground(BROWN);
         
         String dateStr = event.date.format(EventManager.DATE_FMT);
-        // [수정] 이모지 -> 텍스트
         String detail1 = String.format("일시: %s  |  장소: %s", dateStr, event.location);
         JLabel l1 = new JLabel(detail1);
         l1.setFont(uiFont.deriveFont(15f));
@@ -170,7 +173,6 @@ public class CouncilMainFrame extends JFrame {
             l2.setForeground(new Color(100, 100, 100));
             infoPanel.add(l2);
 
-            // [수정] 줄바꿈 처리 (세로 간격 추가)
             if(event.secretCode != null && !event.secretCode.isEmpty()) {
                 infoPanel.add(Box.createVerticalStrut(5));
                 JLabel l3 = new JLabel("비밀코드: " + event.secretCode);

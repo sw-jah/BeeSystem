@@ -2,18 +2,18 @@ package council;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.*; // [중요] 텍스트 스타일링을 위해 추가
 import java.awt.*;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 
-import council.EventManager.FeeType; // [중요] FeeType 임포트
+import council.EventManager.FeeType;
 
 public class CouncilEventAddDialog extends JDialog {
 
     private static final Color BG_WHITE = new Color(255, 255, 255);
     private static final Color BROWN = new Color(139, 90, 43);
-    private static final Color POPUP_BG = new Color(255, 250, 205);
     
     private static Font uiFont;
     static {
@@ -27,16 +27,15 @@ public class CouncilEventAddDialog extends JDialog {
     private CouncilMainFrame parent;
     private EventManager.EventData currentEvent;
     
-    // [수정] 주최자 정보 저장을 위한 변수 추가
+    // 주최자 정보
     private String councilId;
     private String councilName;
 
     private JTextField titleField, dateField, locField, startField, endField, totalField, codeField;
-    private JComboBox<String> feeCombo; // [추가] 회비 선택 콤보박스
+    private JComboBox<String> feeCombo; 
     private JCheckBox codeCheck;
     private JTextArea descArea;
 
-    // [수정] 생성자: 학생회 ID와 이름(id, name)을 받는 파라미터 추가
     public CouncilEventAddDialog(CouncilMainFrame parent, EventManager.EventData event, String id, String name) {
         super(parent, event == null ? "새 행사 등록" : "행사 수정", true);
         this.parent = parent;
@@ -44,7 +43,7 @@ public class CouncilEventAddDialog extends JDialog {
         this.councilId = id;
         this.councilName = name;
 
-        setSize(500, 750); // 높이 약간 증가
+        setSize(500, 750);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout());
         getContentPane().setBackground(BG_WHITE);
@@ -66,7 +65,7 @@ public class CouncilEventAddDialog extends JDialog {
         endField = addInput(formPanel, "신청 종료 일시 (yyyy-MM-dd HH:mm)");
         totalField = addInput(formPanel, "총 모집 인원 (숫자만)");
 
-        // [추가] 납부 대상 선택 (회비 종류)
+        // 납부 대상 선택
         JPanel feePanel = new JPanel(new BorderLayout(0, 5));
         feePanel.setBackground(BG_WHITE);
         JLabel feeLabel = new JLabel("납부 대상 (참여 조건)");
@@ -161,7 +160,6 @@ public class CouncilEventAddDialog extends JDialog {
         endField.setText(currentEvent.endDateTime.format(EventManager.DATE_FMT));
         totalField.setText(String.valueOf(currentEvent.totalCount));
         
-        // [추가] 회비 정보 로드
         if (currentEvent.requiredFee != null) {
             feeCombo.setSelectedItem(currentEvent.requiredFee.getLabel());
         }
@@ -182,6 +180,7 @@ public class CouncilEventAddDialog extends JDialog {
                 return;
             }
             
+            // [중요] 날짜 변환 로직 (행사일, 신청시작일, 신청종료일 모두 변환됨)
             LocalDateTime eventDate, startDate, endDate;
             try {
                 eventDate = LocalDateTime.parse(dateField.getText().trim(), EventManager.DATE_FMT);
@@ -199,28 +198,26 @@ public class CouncilEventAddDialog extends JDialog {
                 }
 
             } catch (DateTimeParseException e) {
-                showCustomAlertPopup("날짜 형식이 올바르지 않습니다.\n(yyyy-MM-dd HH:mm)");
+                // [수정] 양식을 지키지 않았을 때 뜨는 팝업 메시지
+                showCustomAlertPopup("날짜 형식이 올바르지 않습니다.\n(2023-12-05 12:00)\n형식으로 다시 입력해주세요.");
                 return;
             }
 
             String code = codeCheck.isSelected() ? codeField.getText().trim() : null;
             int total = Integer.parseInt(totalField.getText().trim());
 
-            // [추가] 선택된 회비 타입 변환
             String selectedFee = (String) feeCombo.getSelectedItem();
             FeeType feeType = FeeType.NONE;
             if (selectedFee.equals(FeeType.SCHOOL.getLabel())) feeType = FeeType.SCHOOL;
             else if (selectedFee.equals(FeeType.DEPT.getLabel())) feeType = FeeType.DEPT;
 
             if (currentEvent == null) {
-                // [수정] 새 EventData 생성 (주최자 ID, 학과명, 회비 정보 포함 13개 인자)
                 EventManager.EventData newEvent = new EventManager.EventData(
                     councilId, councilName, title, eventDate, locField.getText(), 
                     startDate, endDate, total, 0, code, "진행중", descArea.getText(), feeType
                 );
                 EventManager.addEvent(newEvent);
             } else {
-                // 수정
                 currentEvent.title = title;
                 currentEvent.date = eventDate; 
                 currentEvent.location = locField.getText();
@@ -229,7 +226,7 @@ public class CouncilEventAddDialog extends JDialog {
                 currentEvent.totalCount = total;
                 currentEvent.secretCode = code;
                 currentEvent.description = descArea.getText();
-                currentEvent.requiredFee = feeType; // [추가] 회비 정보 업데이트
+                currentEvent.requiredFee = feeType; 
             }
             
             parent.refreshLists();
@@ -241,19 +238,20 @@ public class CouncilEventAddDialog extends JDialog {
         }
     }
 
+    // [수정] 텍스트 상하좌우 중앙 정렬이 적용된 예쁜 팝업
     private void showCustomAlertPopup(String message) {
         JDialog dialog = new JDialog(this, "알림", true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
         dialog.setUndecorated(true);
         dialog.setBackground(new Color(0,0,0,0));
-        dialog.setSize(400, 200);
-        dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(POPUP_BG);
+                g2.setColor(new Color(255, 250, 205)); 
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
                 g2.setColor(BROWN);
                 g2.setStroke(new BasicStroke(3));
@@ -263,18 +261,31 @@ public class CouncilEventAddDialog extends JDialog {
         panel.setLayout(null);
         dialog.add(panel);
 
-        JTextArea msgArea = new JTextArea(message);
-        msgArea.setFont(uiFont.deriveFont(18f));
-        msgArea.setForeground(BROWN);
-        msgArea.setOpaque(false);
-        msgArea.setEditable(false);
-        msgArea.setLineWrap(true);
-        msgArea.setWrapStyleWord(true);
-        msgArea.setBounds(30, 50, 340, 70);
-        panel.add(msgArea);
+        // 텍스트를 담을 투명 패널 (GridBagLayout)
+        JPanel textPanel = new JPanel(new GridBagLayout());
+        textPanel.setOpaque(false);
+        textPanel.setBounds(20, 40, 360, 110); 
+        panel.add(textPanel);
+
+        // 메시지 표시 (JTextPane 사용 - 폰트 중앙 정렬)
+        JTextPane msgPane = new JTextPane();
+        msgPane.setText(message);
+        msgPane.setFont(uiFont.deriveFont(18f));
+        msgPane.setForeground(BROWN);
+        msgPane.setOpaque(false);
+        msgPane.setEditable(false);
+        msgPane.setFocusable(false);
+        
+        // 가로 중앙 정렬 스타일
+        StyledDocument doc = msgPane.getStyledDocument();
+        SimpleAttributeSet center = new SimpleAttributeSet();
+        StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
+        doc.setParagraphAttributes(0, doc.getLength(), center, false);
+
+        textPanel.add(msgPane);
 
         JButton okBtn = createBtn("확인", BROWN);
-        okBtn.setBounds(135, 130, 130, 45);
+        okBtn.setBounds(135, 160, 130, 45);
         okBtn.addActionListener(e -> dialog.dispose());
         panel.add(okBtn);
 

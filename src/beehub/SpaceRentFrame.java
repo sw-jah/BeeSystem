@@ -3,6 +3,8 @@ package beehub;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
+import javax.swing.text.*; 
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
@@ -22,9 +24,8 @@ public class SpaceRentFrame extends JFrame {
     private static final Color BG_MAIN = new Color(255, 255, 255);
     private static final Color BROWN = new Color(89, 60, 28);
     private static final Color LIGHT_BROWN = new Color(160, 120, 80);
-    private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157); // [중요] 노란색 통일
+    private static final Color HIGHLIGHT_YELLOW = new Color(255, 245, 157);
     private static final Color BORDER_COLOR = new Color(220, 220, 220);
-    private static final Color POPUP_BG = new Color(255, 250, 205);
     
     private static final Color BTN_OFF_BG = new Color(250, 250, 250);
     private static final Color BTN_ON_BG = BROWN;
@@ -61,8 +62,12 @@ public class SpaceRentFrame extends JFrame {
     private ArrayList<JToggleButton> timeButtons = new ArrayList<>();
     private int selectedTimeCount = 0;
     
-    private JTextField myIdField;
+    // 학번 필드 제거됨 -> 이름만 표시
     private JTextField myNameField; 
+
+    // 날짜 제한을 위한 변수
+    private LocalDate today;
+    private LocalDate maxDate;
 
     public SpaceRentFrame() {
         setTitle("서울여대 꿀단지 - 공간대여");
@@ -88,8 +93,8 @@ public class SpaceRentFrame extends JFrame {
     }
 
     private void initDummyData() {
-        LocalDate today = LocalDate.now();
-        String key = "세미나실 A_" + today.getYear() + "년 " + today.getMonthValue() + "월 " + today.getDayOfMonth() + "일";
+        LocalDate now = LocalDate.now();
+        String key = "세미나실 A_" + now.getYear() + "년 " + now.getMonthValue() + "월 " + now.getDayOfMonth() + "일";
         bookedDatabase.put(key, java.util.Arrays.asList("10:00", "14:00"));
     }
 
@@ -170,7 +175,10 @@ public class SpaceRentFrame extends JFrame {
         monthCombo = new JComboBox<>();
         dayCombo = new JComboBox<>();
         styleComboBox(yearCombo); styleComboBox(monthCombo); styleComboBox(dayCombo);
+        
+        // [복구] 날짜 로직 초기화
         initDateLogic(); 
+        
         datePanel.add(yearCombo); datePanel.add(monthCombo); datePanel.add(dayCombo);
         leftPanel.add(datePanel);
 
@@ -207,29 +215,20 @@ public class SpaceRentFrame extends JFrame {
         infoPanel.add(info1); infoPanel.add(info2); infoPanel.add(info3);
         rightPanel.add(infoPanel);
 
-        // 신청자 정보 (자동 입력 & 수정 불가)
-        addLabel(rightPanel, "신청자 학번 (자동 입력)", 105);
-        myIdField = new JTextField(userId);
-        myIdField.setFont(uiFont.deriveFont(16f));
-        myIdField.setBorder(BorderFactory.createCompoundBorder(new RoundedBorder(10, BORDER_COLOR, 1), BorderFactory.createEmptyBorder(5, 10, 5, 10)));
-        myIdField.setBounds(25, 130, 340, 40);
-        myIdField.setBackground(new Color(245, 245, 245));
-        myIdField.setEditable(false); // 수정 불가
-        rightPanel.add(myIdField);
-
-        addLabel(rightPanel, "신청자 이름 (자동 입력)", 185);
+        // 신청자 이름만 표시 (학번 필드 제거됨)
+        addLabel(rightPanel, "신청자 이름 (자동 입력)", 100); 
         myNameField = new JTextField(userName);
         myNameField.setFont(uiFont.deriveFont(16f));
         myNameField.setBorder(BorderFactory.createCompoundBorder(new RoundedBorder(10, BORDER_COLOR, 1), BorderFactory.createEmptyBorder(5, 10, 5, 10)));
-        myNameField.setBounds(25, 210, 340, 40);
+        myNameField.setBounds(25, 125, 340, 40); 
         myNameField.setBackground(new Color(245, 245, 245));
-        myNameField.setEditable(false); // 수정 불가
+        myNameField.setEditable(false); 
         rightPanel.add(myNameField);
 
         JLabel partnerLabel = new JLabel("동반인 정보 (최대 5명)");
         partnerLabel.setFont(uiFont.deriveFont(14f));
         partnerLabel.setForeground(LIGHT_BROWN);
-        partnerLabel.setBounds(25, 265, 200, 20);
+        partnerLabel.setBounds(25, 185, 200, 20); 
         rightPanel.add(partnerLabel);
 
         JButton addPartnerBtn = new JButton("+ 추가");
@@ -237,7 +236,7 @@ public class SpaceRentFrame extends JFrame {
         addPartnerBtn.setForeground(BROWN);
         addPartnerBtn.setBackground(Color.WHITE);
         addPartnerBtn.setBorder(new RoundedBorder(10, BORDER_COLOR, 1));
-        addPartnerBtn.setBounds(305, 260, 60, 25);
+        addPartnerBtn.setBounds(305, 180, 60, 25); 
         addPartnerBtn.setFocusPainted(false);
         addPartnerBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         addPartnerBtn.addActionListener(e -> addPartnerRow());
@@ -247,8 +246,9 @@ public class SpaceRentFrame extends JFrame {
         partnerContainer.setLayout(new BoxLayout(partnerContainer, BoxLayout.Y_AXIS));
         partnerContainer.setBackground(Color.WHITE);
         
+        // 스크롤 패널 높이 확장
         JScrollPane scrollPane = new JScrollPane(partnerContainer);
-        scrollPane.setBounds(25, 295, 340, 80); 
+        scrollPane.setBounds(25, 215, 340, 140); 
         scrollPane.setBorder(null);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         rightPanel.add(scrollPane);
@@ -257,7 +257,7 @@ public class SpaceRentFrame extends JFrame {
         rentBtn.setFont(uiFont.deriveFont(20f));
         rentBtn.setBackground(BROWN);
         rentBtn.setForeground(Color.WHITE);
-        rentBtn.setBounds(25, 390, 340, 45); 
+        rentBtn.setBounds(25, 370, 340, 45); 
         rentBtn.setFocusPainted(false);
         rentBtn.setBorder(new RoundedBorder(15, BROWN, 1));
         rentBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -381,26 +381,84 @@ public class SpaceRentFrame extends JFrame {
         }
     }
 
+    // =========================================================
+    // [중요] 날짜 로직 복구 (오늘 ~ 3개월 후까지만 선택 가능)
+    // =========================================================
     private void initDateLogic() {
-        LocalDate today = LocalDate.now();
+        today = LocalDate.now();
+        maxDate = today.plusMonths(3); // 오늘로부터 3개월 뒤까지만
+
+        // 년도 추가 (올해, 그리고 만약 3개월 뒤가 내년이라면 내년까지)
         yearCombo.addItem(today.getYear());
-        updateMonths(today);
-        updateDays(today);
-        yearCombo.addActionListener(e -> { updateMonths(today); updateTimeSlotAvailability(); });
-        monthCombo.addActionListener(e -> { updateDays(today); updateTimeSlotAvailability(); });
+        if (maxDate.getYear() > today.getYear()) {
+            yearCombo.addItem(maxDate.getYear());
+        }
+
+        updateMonths();
+        updateDays();
+
+        // 이벤트 리스너 (선택 변경 시 하위 콤보박스 갱신)
+        yearCombo.addActionListener(e -> { 
+            updateMonths(); 
+            updateTimeSlotAvailability(); 
+        });
+        monthCombo.addActionListener(e -> { 
+            updateDays(); 
+            updateTimeSlotAvailability(); 
+        });
         dayCombo.addActionListener(e -> updateTimeSlotAvailability());
     }
     
-    private void updateMonths(LocalDate today) {
+    private void updateMonths() {
+        if (yearCombo.getSelectedItem() == null) return;
+        
+        int selectedYear = (Integer) yearCombo.getSelectedItem();
         monthCombo.removeAllItems();
-        for(int i=today.getMonthValue(); i<=12; i++) monthCombo.addItem(i);
+
+        int startMonth = 1;
+        int endMonth = 12;
+
+        // 올해라면: 이번 달부터 시작
+        if (selectedYear == today.getYear()) {
+            startMonth = today.getMonthValue();
+        }
+        
+        // 마지막 년도(내년)라면: 최대 월까지만 표시
+        if (selectedYear == maxDate.getYear()) {
+            endMonth = maxDate.getMonthValue();
+        }
+        
+        // (주의) 만약 올해 == 마지막 년도라면, startMonth부터 endMonth까지 둘 다 적용됨
+        for (int i = startMonth; i <= endMonth; i++) {
+            monthCombo.addItem(i);
+        }
     }
     
-    private void updateDays(LocalDate today) {
+    private void updateDays() {
+        if (yearCombo.getSelectedItem() == null || monthCombo.getSelectedItem() == null) return;
+
+        int selectedYear = (Integer) yearCombo.getSelectedItem();
+        int selectedMonth = (Integer) monthCombo.getSelectedItem();
+        
         dayCombo.removeAllItems();
-        int m = (Integer) monthCombo.getSelectedItem();
-        int startDay = (m == today.getMonthValue()) ? today.getDayOfMonth() : 1;
-        for(int i=startDay; i<=31; i++) dayCombo.addItem(i);
+
+        int startDay = 1;
+        int lastDayOfThisMonth = LocalDate.of(selectedYear, selectedMonth, 1).lengthOfMonth();
+        int endDay = lastDayOfThisMonth;
+
+        // "오늘"이 포함된 달이라면: 오늘 날짜부터 시작
+        if (selectedYear == today.getYear() && selectedMonth == today.getMonthValue()) {
+            startDay = today.getDayOfMonth();
+        }
+
+        // "최대 날짜"가 포함된 달이라면: 최대 일까지만 표시
+        if (selectedYear == maxDate.getYear() && selectedMonth == maxDate.getMonthValue()) {
+            endDay = maxDate.getDayOfMonth();
+        }
+
+        for (int i = startDay; i <= endDay; i++) {
+            dayCombo.addItem(i);
+        }
     }
 
     private void updateTimeSlotAvailability() { /* 더미 로직 */ }
@@ -434,24 +492,128 @@ public class SpaceRentFrame extends JFrame {
         box.setForeground(BROWN);
     }
 
+    // [수정] 텍스트 상하좌우 중앙 정렬 (GridBagLayout + JTextPane 조합)
     private void showSimplePopup(String title, String message) {
-        JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
+        JDialog dialog = new JDialog(this, title, true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(255, 250, 205)); 
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(new Color(139, 90, 43));
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        // 텍스트를 담을 투명 패널 (GridBagLayout)
+        JPanel textPanel = new JPanel(new GridBagLayout());
+        textPanel.setOpaque(false);
+        textPanel.setBounds(20, 40, 360, 110); 
+        panel.add(textPanel);
+
+        // 메시지 표시 (JTextPane)
+        JTextPane msgPane = new JTextPane();
+        msgPane.setText(message);
+        msgPane.setFont(uiFont.deriveFont(18f));
+        msgPane.setForeground(new Color(139, 90, 43));
+        msgPane.setOpaque(false);
+        msgPane.setEditable(false);
+        msgPane.setFocusable(false);
+        
+        // 가로 중앙 정렬
+        StyledDocument doc = msgPane.getStyledDocument();
+        SimpleAttributeSet center = new SimpleAttributeSet();
+        StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
+        doc.setParagraphAttributes(0, doc.getLength(), center, false);
+
+        textPanel.add(msgPane);
+
+        JButton okBtn = new JButton("확인");
+        okBtn.setFont(uiFont.deriveFont(16f));
+        okBtn.setBackground(new Color(139, 90, 43));
+        okBtn.setForeground(Color.WHITE);
+        okBtn.setFocusPainted(false);
+        okBtn.setBounds(130, 160, 140, 45);
+        okBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        okBtn.setBorder(BorderFactory.createLineBorder(new Color(139, 90, 43), 2));
+        okBtn.addActionListener(e -> dialog.dispose());
+        panel.add(okBtn);
+
+        dialog.setVisible(true);
     }
 
+    // [수정] 로그아웃 팝업 (커스텀 디자인)
     private void showLogoutPopup() {
-        int ans = JOptionPane.showConfirmDialog(this, "로그아웃 하시겠습니까?", "로그아웃", JOptionPane.YES_NO_OPTION);
-        if(ans == JOptionPane.YES_OPTION) {
+        JDialog dialog = new JDialog(this, "로그아웃", true);
+        dialog.setSize(400, 250);
+        dialog.setLocationRelativeTo(this);
+        dialog.setUndecorated(true);
+        dialog.setBackground(new Color(0,0,0,0));
+
+        JPanel panel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(255, 250, 205)); 
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+                g2.setColor(new Color(139, 90, 43));
+                g2.setStroke(new BasicStroke(3));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+            }
+        };
+        panel.setLayout(null);
+        dialog.add(panel);
+
+        JLabel msgLabel = new JLabel("로그아웃 하시겠습니까?", SwingConstants.CENTER);
+        msgLabel.setFont(uiFont.deriveFont(18f));
+        msgLabel.setForeground(new Color(139, 90, 43));
+        msgLabel.setBounds(20, 50, 360, 50);
+        panel.add(msgLabel);
+
+        JButton yesBtn = new JButton("네");
+        yesBtn.setFont(uiFont.deriveFont(16f));
+        yesBtn.setBackground(new Color(139, 90, 43));
+        yesBtn.setForeground(Color.WHITE);
+        yesBtn.setFocusPainted(false);
+        yesBtn.setBounds(70, 140, 110, 45);
+        yesBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        yesBtn.setBorder(BorderFactory.createLineBorder(new Color(139, 90, 43), 2));
+        yesBtn.addActionListener(e -> {
+            dialog.dispose();
             UserManager.logout();
             new LoginFrame();
             dispose();
-        }
+        });
+        panel.add(yesBtn);
+
+        JButton noBtn = new JButton("아니오");
+        noBtn.setFont(uiFont.deriveFont(16f));
+        noBtn.setBackground(new Color(139, 90, 43));
+        noBtn.setForeground(Color.WHITE);
+        noBtn.setFocusPainted(false);
+        noBtn.setBounds(210, 140, 110, 45);
+        noBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        noBtn.setBorder(BorderFactory.createLineBorder(new Color(139, 90, 43), 2));
+        noBtn.addActionListener(e -> dialog.dispose());
+        panel.add(noBtn);
+
+        dialog.setVisible(true);
     }
 
-    // [수정] 버튼 활성화 색상을 HIGHLIGHT_YELLOW로 통일
     private JButton createNavButton(String text, boolean isActive) {
         JButton btn = new JButton(text);
         btn.setFont(uiFont.deriveFont(16f));
-        // isActive일 때 HIGHLIGHT_YELLOW 사용 (기존 HIGHLIGHT 제거)
         btn.setBackground(isActive ? HIGHLIGHT_YELLOW : NAV_BG);
         btn.setForeground(BROWN);
         btn.setBorderPainted(false);
@@ -493,7 +655,11 @@ public class SpaceRentFrame extends JFrame {
         public Insets getBorderInsets(Component c) { return new Insets(radius/2, radius/2, radius/2, radius/2); }
         public boolean isBorderOpaque() { return false; }
         public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-            g.setColor(color); g.drawRoundRect(x, y, w-1, h-1, radius, radius);
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(thickness));
+            g2.drawRoundRect(x, y, w-1, h-1, radius, radius);
         }
     }
 

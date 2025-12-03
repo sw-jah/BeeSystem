@@ -2,6 +2,9 @@ package beehub;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+// [중요] 텍스트 스타일링 및 정렬을 위해 추가된 임포트
+import javax.swing.text.*; 
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.InputStream;
@@ -49,7 +52,7 @@ public class LoginFrame extends JFrame {
     private JTextField hakbunField;
     private JPasswordField pwField;
     
-    // 관리자용 필드 (엔터키 처리를 위해 멤버 변수로 변경)
+    // 관리자용 필드
     private JTextField adminIdField;
     private JPasswordField adminPwField;
 
@@ -112,7 +115,6 @@ public class LoginFrame extends JFrame {
 
         hakbunField = createStyledTextField();
         hakbunField.setBounds(80, 265, 340, 50);
-        // [추가] 엔터키 리스너
         hakbunField.addActionListener(e -> handleUserLogin());
         panel.add(hakbunField);
 
@@ -124,7 +126,6 @@ public class LoginFrame extends JFrame {
 
         pwField = createStyledPasswordField();
         pwField.setBounds(80, 375, 340, 50);
-        // [추가] 엔터키 리스너
         pwField.addActionListener(e -> handleUserLogin());
         panel.add(pwField);
 
@@ -227,7 +228,6 @@ public class LoginFrame extends JFrame {
 
         adminIdField = createStyledTextField();
         adminIdField.setBounds(80, 255, 340, 50);
-        // [추가] 엔터키 리스너
         adminIdField.addActionListener(e -> handleAdminLogin());
         panel.add(adminIdField);
 
@@ -239,7 +239,6 @@ public class LoginFrame extends JFrame {
 
         adminPwField = createStyledPasswordField();
         adminPwField.setBounds(80, 365, 340, 50);
-        // [추가] 엔터키 리스너
         adminPwField.addActionListener(e -> handleAdminLogin());
         panel.add(adminPwField);
 
@@ -301,7 +300,6 @@ public class LoginFrame extends JFrame {
         UserDAO.CouncilInfo council = dao.getCouncilInfo(id, pw);
         if (council != null) {
             showCustomDialog(council.name + "님 환영합니다!", false);
-            // [중요] 로그인한 학생회 정보를 전달
             new council.CouncilMainFrame(council.id, council.name); 
             dispose();
             return;
@@ -311,7 +309,7 @@ public class LoginFrame extends JFrame {
     }
 
     // ===============================================================
-    // 🎨 예쁜 커스텀 팝업창
+    // 🎨 예쁜 커스텀 팝업창 (중앙 정렬 적용 완료)
     // ===============================================================
     private void showCustomDialog(String message, boolean goBackToLogin) {
         JDialog dialog = new JDialog(this, "알림", true);
@@ -335,14 +333,29 @@ public class LoginFrame extends JFrame {
         panel.setLayout(null);
         dialog.add(panel);
 
-        JTextArea msgLabel = new JTextArea(message);
-        msgLabel.setFont(uiFont.deriveFont(20f));
-        msgLabel.setForeground(BROWN);
-        msgLabel.setOpaque(false);
-        msgLabel.setEditable(false);
-        msgLabel.setHighlighter(null);
-        msgLabel.setBounds(30, 50, 340, 80);
-        panel.add(msgLabel);
+        // [수정] 텍스트를 담을 투명 패널 (GridBagLayout 사용 -> 수직/수평 중앙 정렬)
+        JPanel textPanel = new JPanel(new GridBagLayout());
+        textPanel.setOpaque(false);
+        textPanel.setBounds(30, 40, 340, 110); 
+        panel.add(textPanel);
+
+        // [수정] JTextPane을 사용하여 텍스트 자체 중앙 정렬
+        JTextPane msgPane = new JTextPane();
+        msgPane.setText(message);
+        msgPane.setFont(uiFont.deriveFont(20f));
+        msgPane.setForeground(BROWN);
+        msgPane.setOpaque(false);
+        msgPane.setEditable(false);
+        msgPane.setFocusable(false);
+        
+        // 문단 스타일 설정 (가로 중앙 정렬)
+        StyledDocument doc = msgPane.getStyledDocument();
+        SimpleAttributeSet center = new SimpleAttributeSet();
+        StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
+        doc.setParagraphAttributes(0, doc.getLength(), center, false);
+
+        // 패널에 추가 (GridBagLayout이 자동으로 상하좌우 중앙에 배치함)
+        textPanel.add(msgPane);
 
         JButton okBtn = createStyledButton("확인");
         okBtn.setFont(uiFont.deriveFont(18f));
